@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandOps Simulator — Market Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<style>
+  :root {
+    --bg:        #0a0a0b;
+    --bg2:       #111113;
+    --bg3:       #1a1a1e;
+    --border:    #2a2a30;
+    --amber:     #f5a623;
+    --amber2:    #d4891a;
+    --green:     #22c55e;
+    --red:       #ef4444;
+    --yellow:    #eab308;
+    --muted:     #6b7280;
+    --text:      #e8e3d8;
+    --text2:     #b0a898;
+    --serif:     'Playfair Display', serif;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Ticker Bar ───────────────────────── */
+  .ticker-wrap {
+    background: var(--amber);
+    color: #000;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 6px 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .ticker-inner {
+    display: inline-block;
+    animation: ticker 30s linear infinite;
+  }
+  @keyframes ticker {
+    0%   { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+  .ticker-item { margin: 0 32px; display: inline-block; }
+  .ticker-up   { color: #14532d; }
+  .ticker-down { color: #7f1d1d; }
+
+  /* ── Masthead ─────────────────────────── */
+  .masthead {
+    border-bottom: 3px double var(--border);
+    padding: 24px 32px 20px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .masthead-title {
+    font-family: var(--serif);
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .masthead-title span { color: var(--amber); }
+  .masthead-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .masthead-meta {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .masthead-meta strong {
+    font-size: 15px;
+    color: var(--amber);
+    font-weight: 600;
+    display: block;
+  }
+
+  /* ── Season Banner ────────────────────── */
+  .season-bar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .phase-badge {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+  .week-indicator {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .week-indicator span { color: var(--muted); font-size: 13px; font-family: var(--mono); font-weight: 400; }
+  .volatility-bar-wrap {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .volatility-track {
+    width: 120px;
+    height: 6px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .volatility-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
+    transition: width 0.5s ease;
+  }
+
+  /* ── Main Grid ────────────────────────── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 0;
+    min-height: calc(100vh - 160px);
+  }
+
+  /* ── Leaderboard ──────────────────────── */
+  .leaderboard {
+    padding: 24px 32px;
+    border-right: 1px solid var(--border);
+  }
+  .section-header {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .live-dot {
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 2s ease infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .team-row {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeIn 0.4s ease;
+    transition: background 0.2s;
+  }
+  .team-row:hover { background: rgba(245,166,35,0.03); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+  .rank-num {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--border);
+    text-align: center;
+  }
+  .rank-num.gold   { color: var(--amber); }
+  .rank-num.silver { color: #9ca3af; }
+  .rank-num.bronze { color: #b45309; }
+
+  .team-info {}
+  .team-brand {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .team-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Stat bars inline */
+  .stat-bars { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .stat-chip {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .stat-chip .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .team-score-block { text-align: right; }
+  .market-score {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--amber);
+  }
+  .stock-price {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .stock-price .up   { color: var(--green); }
+  .stock-price .down { color: var(--red); }
+
+  /* ── Sidebar ──────────────────────────── */
+  .sidebar {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Event feed */
+  .event-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    padding: 14px;
+    animation: slideIn 0.4s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; } }
+
+  .event-card.economic  { border-left-color: var(--yellow); }
+  .event-card.social    { border-left-color: #a855f7; }
+  .event-card.innovation{ border-left-color: #3b82f6; }
+  .event-card.wildcard  { border-left-color: var(--red); }
+
+  .event-deck {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .event-title {
+    font-family: var(--serif);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .event-story {
+    font-size: 11px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+  .event-team {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--amber);
+    margin-top: 8px;
+  }
+
+  /* Spark chart placeholder */
+  .mini-chart {
+    width: 100%;
+    height: 40px;
+  }
+
+  /* No data state */
+  .no-data {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+  }
+  .no-data-title {
+    font-family: var(--serif);
+    font-size: 24px;
+    color: var(--border);
+    margin-bottom: 12px;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .sidebar { border-top: 1px solid var(--border); }
+    .masthead { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Ticker -->
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="tickerContent">Loading market data...</div>
+</div>
+
+<!-- Masthead -->
+<header class="masthead">
+  <div>
+    <div class="masthead-title">Brand<span>Ops</span> Simulator</div>
+    <div class="masthead-sub">Multimedia Marketing · Live Market Board</div>
+  </div>
+  <div class="masthead-meta">
+    <strong id="headerDate">—</strong>
+    <span id="headerTime">—</span><br>
+    <span>Season 1</span>
+  </div>
+</header>
+
+<!-- Season/Phase bar -->
+<div class="season-bar">
+  <div class="phase-badge" id="phaseBadge">Phase — : —</div>
+  <div class="week-indicator">Week <span id="currentWeek">—</span> <span>of 18</span></div>
+  <div class="volatility-bar-wrap">
+    <span>VOLATILITY</span>
+    <div class="volatility-track">
+      <div class="volatility-fill" id="volFill" style="width:0%"></div>
+    </div>
+    <span id="volNum">—</span>
+  </div>
+</div>
+
+<!-- Main Layout -->
+<div class="main-grid">
+
+  <!-- Leaderboard -->
+  <div class="leaderboard">
+    <div class="section-header">
+      <span>Market Leaderboard</span>
+      <span><span class="live-dot"></span> &nbsp; Live</span>
+    </div>
+    <div id="leaderboardList">
+      <div class="no-data">
+        <div class="no-data-title">Awaiting Market Open</div>
+        Season not yet started. Check back when your teacher opens the market.
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div>
+      <div class="section-header">This Week's Events</div>
+      <div id="eventFeed">
+        <div class="no-data" style="padding:30px 0;">
+          <div style="font-size:22px; margin-bottom:8px">📰</div>
+          No events this week yet.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Scripts -->
+<script src="js/firebase-config.js"></script>
+<script src="js/game-engine.js"></script>
+<script src="js/event-cards.js"></script>
+
+<script>
+// ── Firebase Init ──────────────────────────────────────────
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.database();
+
+// ── Clock ──────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('headerDate').textContent =
+    now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  document.getElementById('headerTime').textContent =
+    now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// ── Data Listeners ─────────────────────────────────────────
+let seasonData = null;
+let teamsData   = {};
+
+db.ref('season').on('value', snap => {
+  seasonData = snap.val();
+  renderAll();
+});
+
+db.ref('teams').on('value', snap => {
+  teamsData = snap.val() || {};
+  renderAll();
+});
+
+// ── Render All ─────────────────────────────────────────────
+function renderAll() {
+  if (!seasonData) return;
+
+  // Phase + week
+  const week  = seasonData.currentWeek || 1;
+  const phase = GameEngine.getPhase(week);
+  document.getElementById('currentWeek').textContent = week;
+  document.getElementById('phaseBadge').textContent  = `${phase.emoji} Phase ${GAME_CONFIG.phases.indexOf(phase)+1}: ${phase.name}`;
+
+  // Volatility
+  const vol = seasonData.volatility || 0;
+  document.getElementById('volFill').style.width  = vol + '%';
+  document.getElementById('volNum').textContent   = vol;
+
+  renderLeaderboard();
+  renderTicker();
+  renderEvents();
+}
+
+// ── Leaderboard ────────────────────────────────────────────
+function renderLeaderboard() {
+  const container = document.getElementById('leaderboardList');
+  const teams = Object.values(teamsData);
+
+  if (!teams.length) {
+    container.innerHTML = `
+      <div class="no-data">
+        <div class="no-data-title">Awaiting Market Open</div>
+        Season not yet started.
+      </div>`;
+    return;
+  }
+
+  // Sort by market score
+  teams.sort((a, b) =>
+    GameEngine.calcMarketScore(b.stats) - GameEngine.calcMarketScore(a.stats)
+  );
+
+  container.innerHTML = teams.map((team, i) => {
+    const score  = GameEngine.calcMarketScore(team.stats);
+    const rank   = i + 1;
+    const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+    const trend  = GameEngine.stockTrend(team.stockHistory || []);
+    const stock  = team.stockHistory?.length
+      ? team.stockHistory[team.stockHistory.length - 1].toFixed(2)
+      : GameEngine.calcStockPrice(score, seasonData?.volatility || 40).toFixed(2);
+
+    const stats  = team.stats || {};
+    const statChips = [
+      { label: 'DMD', key: 'demand',     val: stats.demand },
+      { label: 'REP', key: 'reputation', val: stats.reputation },
+      { label: 'INN', key: 'innovation', val: stats.innovation },
+      { label: 'RSK', key: 'risk',       val: stats.risk },
+      { label: 'BDG', key: 'budget',     val: stats.budget },
+    ].map(s => `
+      <div class="stat-chip">
+        <div class="dot" style="background:${GameEngine.statColor(s.key, s.val)}"></div>
+        ${s.label} ${s.val ?? '—'}
+      </div>`).join('');
+
+    return `
+      <div class="team-row">
+        <div class="rank-num ${rankClass}">${rank}</div>
+        <div class="team-info">
+          <div class="team-brand">${team.brandName || 'Unknown Brand'}</div>
+          <div class="team-meta">${team.industry || ''} · ${team.country || ''} · ${team.targetDemo || ''}</div>
+          <div class="stat-bars">${statChips}</div>
+        </div>
+        <div class="team-score-block">
+          <div class="market-score">${score}</div>
+          <div class="stock-price">
+            $${stock}
+            <span class="${trend.arrow === '▲' ? 'up' : trend.arrow === '▼' ? 'down' : ''}">
+              ${trend.arrow} ${trend.diff || ''}
+            </span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Stock Ticker ───────────────────────────────────────────
+function renderTicker() {
+  const teams = Object.values(teamsData);
+  if (!teams.length) return;
+
+  const items = teams.map(team => {
+    const score  = GameEngine.calcMarketScore(team.stats || {});
+    const trend  = GameEngine.stockTrend(team.stockHistory || []);
+    const stock  = team.stockHistory?.length
+      ? team.stockHistory[team.stockHistory.length - 1].toFixed(2)
+      : GameEngine.calcStockPrice(score, 40).toFixed(2);
+    const cls    = trend.arrow === '▲' ? 'ticker-up' : trend.arrow === '▼' ? 'ticker-down' : '';
+    return `<span class="ticker-item">
+      <strong>${(team.brandName || '???').toUpperCase()}</strong>
+      $${stock}
+      <span class="${cls}">${trend.arrow} ${trend.diff || '±0.00'}</span>
+    </span>`;
+  });
+
+  // Repeat for seamless loop
+  document.getElementById('tickerContent').innerHTML = items.join('') + items.join('');
+}
+
+// ── Event Feed ─────────────────────────────────────────────
+function renderEvents() {
+  const container = document.getElementById('eventFeed');
+  const activeCards = seasonData?.activeCards || {};
+  const entries = Object.entries(activeCards);
+
+  if (!entries.length) {
+    container.innerHTML = `
+      <div class="no-data" style="padding:30px 0;">
+        <div style="font-size:22px; margin-bottom:8px">📰</div>
+        No events this week yet.
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = entries.map(([teamId, cardData]) => {
+    const team = teamsData[teamId];
+    const card = CardLibrary.getById(cardData.cardId);
+    if (!card) return '';
+
+    return `
+      <div class="event-card ${card.deck}" style="margin-bottom:12px">
+        <div class="event-deck">${card.deck} event</div>
+        <div class="event-title">${card.title}</div>
+        <div class="event-story">${card.storyText}</div>
+        <div class="event-team">↳ Affecting: ${team?.brandName || teamId}</div>
+      </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandOps — Teacher Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<style>
+:root {
+  --bg:      #0d0d10;
+  --bg2:     #13131a;
+  --bg3:     #1c1c26;
+  --border:  #2e2e3f;
+  --amber:   #f5a623;
+  --green:   #22c55e;
+  --red:     #ef4444;
+  --yellow:  #eab308;
+  --blue:    #3b82f6;
+  --purple:  #a855f7;
+  --muted:   #6b7280;
+  --text:    #e8e3d8;
+  --text2:   #9d97a0;
+  --serif:   'Playfair Display', serif;
+  --mono:    'IBM Plex Mono', monospace;
+  --sans:    'IBM Plex Sans', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+
+/* Login */
+#loginScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 24px;
+}
+.login-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 48px;
+  width: 380px;
+  text-align: center;
+}
+.login-title { font-family: var(--serif); font-size: 32px; font-weight: 900; margin-bottom: 8px; }
+.login-title span { color: var(--amber); }
+.login-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 32px; text-transform: uppercase; }
+input[type="password"] {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text); padding: 12px 16px; font-family: var(--mono);
+  font-size: 14px; outline: none; margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+input[type="password"]:focus { border-color: var(--amber); }
+.btn {
+  background: var(--amber); color: #000; border: none; padding: 12px 24px;
+  font-family: var(--mono); font-size: 13px; font-weight: 600; cursor: pointer;
+  letter-spacing: 0.05em; transition: background 0.2s; width: 100%;
+  text-transform: uppercase;
+}
+.btn:hover { background: #d4891a; }
+.btn.secondary {
+  background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+  width: auto;
+}
+.btn.secondary:hover { background: var(--bg2); border-color: var(--amber); }
+.btn.danger  { background: var(--red); color: #fff; }
+.btn.danger:hover { background: #b91c1c; }
+.btn.success { background: var(--green); color: #000; }
+.btn.success:hover { background: #15803d; }
+.btn.small { padding: 6px 12px; font-size: 11px; width: auto; }
+.error-msg { color: var(--red); font-family: var(--mono); font-size: 12px; margin-top: 8px; }
+
+/* App Shell */
+#appShell { display: none; }
+.top-bar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.app-title { font-family: var(--serif); font-size: 20px; font-weight: 900; }
+.app-title span { color: var(--amber); }
+.top-bar-right { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+.console-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: calc(100vh - 50px);
+}
+
+/* Sidebar nav */
+.nav-sidebar {
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+}
+.nav-item {
+  padding: 12px 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+.nav-item:hover { color: var(--text); background: var(--bg3); }
+.nav-item.active { color: var(--amber); border-left-color: var(--amber); background: rgba(245,166,35,0.06); }
+
+/* Content panels */
+.content { padding: 28px; overflow-y: auto; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.panel-title {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+.panel-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 28px; }
+
+/* Cards / sections */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 14px;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text); padding: 10px 12px; font-family: var(--mono);
+  font-size: 13px; outline: none; transition: border-color 0.2s;
+  margin-bottom: 12px;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--amber); }
+select option { background: var(--bg3); }
+textarea { resize: vertical; min-height: 60px; }
+
+/* Team list */
+.team-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+.team-brand-name { font-family: var(--serif); font-size: 17px; font-weight: 700; }
+.team-details { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 4px; line-height: 1.6; }
+.team-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Stat display */
+.stat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.stat-label { font-family: var(--mono); font-size: 10px; width: 90px; color: var(--muted); flex-shrink: 0; }
+.stat-track { flex: 1; height: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
+.stat-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+.stat-val { font-family: var(--mono); font-size: 11px; width: 28px; text-align: right; color: var(--text2); }
+
+/* Event card picker */
+.deck-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.deck-tab {
+  padding: 6px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+.deck-tab:hover { color: var(--text); }
+.deck-tab.active { background: var(--amber); color: #000; border-color: var(--amber); font-weight: 600; }
+
+.event-option {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
+.event-option:hover { border-left-color: var(--amber); background: rgba(245,166,35,0.04); }
+.event-option.selected { border-left-color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.event-option-title { font-family: var(--serif); font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.event-option-story { font-size: 12px; color: var(--text2); line-height: 1.4; }
+.event-effects {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.effect-chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+}
+.effect-chip.pos { color: var(--green); border-color: rgba(34,197,94,0.3); }
+.effect-chip.neg { color: var(--red); border-color: rgba(239,68,68,0.3); }
+
+/* Score form */
+.score-btn {
+  padding: 10px 20px;
+  font-family: var(--mono);
+  font-size: 13px;
+  border: 2px solid var(--border);
+  background: var(--bg3);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.05em;
+}
+.score-btn:hover { border-color: var(--amber); color: var(--text); }
+.score-btn.selected-1 { border-color: var(--red); color: var(--red); background: rgba(239,68,68,0.08); }
+.score-btn.selected-3 { border-color: var(--yellow); color: var(--yellow); background: rgba(234,179,8,0.08); }
+.score-btn.selected-5 { border-color: var(--green); color: var(--green); background: rgba(34,197,94,0.08); }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-left: 3px solid var(--green);
+  padding: 14px 20px; font-family: var(--mono); font-size: 12px;
+  z-index: 999; animation: toastIn 0.3s ease;
+  max-width: 300px; line-height: 1.4;
+}
+.toast.error { border-left-color: var(--red); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+
+/* Confirmation modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 32px; max-width: 400px; width: 90%;
+}
+.modal-title { font-family: var(--serif); font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+.modal-body { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-title">Brand<span>Ops</span></div>
+    <div class="login-sub">Teacher Console · Restricted Access</div>
+    <input type="password" id="pwInput" placeholder="Enter teacher password" onkeydown="if(event.key==='Enter') doLogin()">
+    <button class="btn" onclick="doLogin()">Access Console</button>
+    <div class="error-msg" id="loginError"></div>
+  </div>
+</div>
+
+<!-- App Shell -->
+<div id="appShell">
+  <div class="top-bar">
+    <div class="app-title">Brand<span>Ops</span> <span style="font-size:13px;color:var(--muted);font-family:var(--mono);font-weight:400">Teacher Console</span></div>
+    <div class="top-bar-right">
+      Week <span id="topWeek" style="color:var(--amber);font-weight:600">—</span> of 18
+      &nbsp;|&nbsp;
+      <span id="topPhase">—</span>
+      &nbsp;|&nbsp;
+      <a href="index.html" target="_blank" style="color:var(--amber);text-decoration:none">↗ Student View</a>
+    </div>
+  </div>
+
+  <div class="console-layout">
+    <!-- Nav -->
+    <nav class="nav-sidebar">
+      <div class="nav-item active" data-panel="dashboard">📊 Dashboard</div>
+      <div class="nav-item" data-panel="teams">👥 Teams</div>
+      <div class="nav-item" data-panel="events">🎲 Events</div>
+      <div class="nav-item" data-panel="scoring">📋 Score Work</div>
+      <div class="nav-item" data-panel="season">⚙️ Season</div>
+    </nav>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="panel-title">Dashboard</div>
+        <div class="panel-sub">Live season overview</div>
+
+        <div class="grid-3" style="margin-bottom:20px">
+          <div class="card">
+            <div class="card-title">Current Week</div>
+            <div style="font-family:var(--serif);font-size:40px;font-weight:900;color:var(--amber)" id="dashWeek">—</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Active Teams</div>
+            <div style="font-family:var(--serif);font-size:40px;font-weight:900" id="dashTeams">—</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Market Volatility</div>
+            <div style="font-family:var(--serif);font-size:40px;font-weight:900;color:var(--yellow)" id="dashVol">—</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Quick Actions</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn small success" onclick="advanceWeek()">⏩ Advance Week</button>
+            <button class="btn small secondary" onclick="triggerDailyStockUpdate()">📈 Update Stock Prices</button>
+            <button class="btn small secondary" onclick="showPanel('events')">🎲 Draw Event Card</button>
+            <button class="btn small secondary" onclick="showPanel('scoring')">📋 Enter Scores</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Team Standings</div>
+          <div id="dashStandings">Loading...</div>
+        </div>
+      </div>
+
+      <!-- TEAMS -->
+      <div class="panel" id="panel-teams">
+        <div class="panel-title">Teams</div>
+        <div class="panel-sub">Manage brand dossiers</div>
+
+        <div class="card">
+          <div class="card-title">Add New Team</div>
+          <div class="grid-2">
+            <div>
+              <label>Brand Name</label>
+              <input type="text" id="newBrandName" placeholder="e.g. Nova Tech Inc.">
+            </div>
+            <div>
+              <label>Team / Student Names</label>
+              <input type="text" id="newTeamMembers" placeholder="e.g. Alex, Jordan, Sam">
+            </div>
+          </div>
+          <div class="grid-3">
+            <div>
+              <label>Industry</label>
+              <select id="newIndustry">
+                <option value="">— Random —</option>
+                <option>Consumer Electronics</option>
+                <option>Athletic Wear</option>
+                <option>Fast Food</option>
+                <option>Luxury Fashion</option>
+                <option>Streaming Media</option>
+                <option>Electric Vehicles</option>
+                <option>Energy Drinks</option>
+                <option>Cosmetics</option>
+                <option>Gaming</option>
+                <option>Sustainable Goods</option>
+              </select>
+            </div>
+            <div>
+              <label>Country of Origin</label>
+              <select id="newCountry">
+                <option value="">— Random —</option>
+                <option>USA</option><option>Japan</option><option>South Korea</option>
+                <option>Germany</option><option>France</option><option>China</option>
+                <option>Brazil</option><option>Sweden</option><option>Canada</option><option>Australia</option>
+              </select>
+            </div>
+            <div>
+              <label>Target Demo</label>
+              <select id="newDemo">
+                <option value="">— Random —</option>
+                <option>Gen Z (16–24)</option><option>Millennials (25–40)</option>
+                <option>Gen X (41–56)</option><option>Families</option>
+                <option>Professionals</option><option>Athletes</option>
+                <option>Gamers</option><option>Eco-Conscious Consumers</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn" style="width:auto" onclick="addTeam()">+ Add Team</button>
+        </div>
+
+        <div id="teamList">Loading teams...</div>
+      </div>
+
+      <!-- EVENTS -->
+      <div class="panel" id="panel-events">
+        <div class="panel-title">Event Cards</div>
+        <div class="panel-sub">Draw and assign curveball events</div>
+
+        <div class="card">
+          <div class="card-title">1. Select Team</div>
+          <select id="eventTeamSelect"><option value="">— Choose a team —</option></select>
+        </div>
+
+        <div class="card">
+          <div class="card-title">2. Choose Deck</div>
+          <div class="deck-tabs">
+            <div class="deck-tab active" data-deck="economic">💰 Economic</div>
+            <div class="deck-tab" data-deck="social">📣 Social</div>
+            <div class="deck-tab" data-deck="innovation">💡 Innovation</div>
+            <div class="deck-tab" data-deck="wildcard">🃏 Wildcard</div>
+          </div>
+          <button class="btn small secondary" onclick="drawRandomCard()">🎲 Draw Random Card</button>
+          &nbsp;
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">or select below</span>
+          <div id="cardList" style="margin-top:16px"></div>
+        </div>
+
+        <div class="card" id="choiceCard" style="display:none">
+          <div class="card-title">3. Apply Choice (if applicable)</div>
+          <div id="choiceOptions"></div>
+          <button class="btn success" style="width:auto;margin-top:12px" onclick="applySelectedEvent()">Apply Event to Team</button>
+        </div>
+      </div>
+
+      <!-- SCORING -->
+      <div class="panel" id="panel-scoring">
+        <div class="panel-title">Score Deliverables</div>
+        <div class="panel-sub">Enter project scores and apply stat boosts</div>
+
+        <div class="card">
+          <div class="grid-2">
+            <div>
+              <label>Team</label>
+              <select id="scoreTeamSelect"><option value="">— Choose a team —</option></select>
+            </div>
+            <div>
+              <label>Deliverable Type</label>
+              <select id="scoreDeliverable">
+                <option value="">— Choose deliverable —</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="card-title" style="margin-top:8px">Score Level</div>
+          <div style="display:flex;gap:12px;margin-bottom:16px">
+            <button class="score-btn" id="scoreBtn1" onclick="selectScore(1)">1 — Below Basic</button>
+            <button class="score-btn" id="scoreBtn3" onclick="selectScore(3)">3 — Proficient</button>
+            <button class="score-btn" id="scoreBtn5" onclick="selectScore(5)">5 — Advanced</button>
+          </div>
+
+          <div id="scorePreview" style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:16px"></div>
+
+          <button class="btn success" style="width:auto" onclick="applyScore()">✓ Apply Score & Stat Boosts</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Recent Score Log</div>
+          <div id="scoreLog" style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.8">
+            No scores recorded yet.
+          </div>
+        </div>
+      </div>
+
+      <!-- SEASON SETTINGS -->
+      <div class="panel" id="panel-season">
+        <div class="panel-title">Season Settings</div>
+        <div class="panel-sub">Configure and control the simulation</div>
+
+        <div class="card">
+          <div class="card-title">Market Volatility</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+            Controls event magnitude and chaos frequency.<br>
+            0–30 = stable · 31–70 = active · 71–100 = chaos mode
+          </p>
+          <label>Volatility (0–100): <span id="volDisplay" style="color:var(--amber)">40</span></label>
+          <input type="range" id="volSlider" min="0" max="100" value="40"
+            oninput="document.getElementById('volDisplay').textContent=this.value"
+            style="width:100%;margin-bottom:12px;accent-color:var(--amber)">
+          <button class="btn small" style="width:auto" onclick="saveVolatility()">Save Volatility</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Week Control</div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <button class="btn small secondary" onclick="adjustWeek(-1)">← Previous Week</button>
+            <span style="font-family:var(--mono);color:var(--amber);font-size:18px" id="seasonWeekDisplay">Week —</span>
+            <button class="btn small success" onclick="advanceWeek()">Next Week →</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Stat Override — Manual Edit</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Directly adjust any team's stats.</p>
+          <div class="grid-2">
+            <div>
+              <label>Team</label>
+              <select id="overrideTeam" onchange="loadOverrideStats()">
+                <option value="">— Choose team —</option>
+              </select>
+            </div>
+          </div>
+          <div id="overrideFields"></div>
+          <button class="btn small" style="width:auto" onclick="saveOverrideStats()">Save Stat Changes</button>
+        </div>
+
+        <div class="card" style="border-color:rgba(239,68,68,0.3)">
+          <div class="card-title" style="color:var(--red)">Danger Zone</div>
+          <button class="btn danger small" onclick="confirmResetSeason()">⚠ Reset Entire Season</button>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /console-layout -->
+</div><!-- /appShell -->
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">Confirm Action</div>
+    <div class="modal-body" id="modalBody">Are you sure?</div>
+    <div class="modal-actions">
+      <button class="btn danger small" id="modalConfirmBtn">Confirm</button>
+      <button class="btn secondary small" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" style="display:none"></div>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/game-engine.js"></script>
+<script src="js/event-cards.js"></script>
+
+<script>
+// ── Auth ──────────────────────────────────────────────────
+function doLogin() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === TEACHER_PASSWORD) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appShell').style.display = 'block';
+    initApp();
+  } else {
+    document.getElementById('loginError').textContent = 'Incorrect password.';
+  }
+}
+
+// ── Firebase ──────────────────────────────────────────────
+let db;
+function initFirebase() {
+  try {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+    }
+    db = firebase.database();
+    return true;
+  } catch (e) {
+    alert('Firebase error: ' + e.message);
+    return false;
+  }
+}
+let seasonData = {};
+let teamsData  = {};
+
+// ── Init ──────────────────────────────────────────────────
+function initApp() {
+  if (!initFirebase()) return;
+  populateDeliverableDropdown();
+
+  db.ref('season').on('value', snap => {
+    seasonData = snap.val() || { currentWeek: 1, volatility: 40, activeCards: {} };
+    refreshSeasonUI();
+  });
+
+  db.ref('teams').on('value', snap => {
+    teamsData = snap.val() || {};
+    refreshTeamUI();
+    refreshTeamSelects();
+  });
+
+  // Nav
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      item.classList.add('active');
+      showPanel(item.dataset.panel);
+    });
+  });
+
+  // Deck tabs
+  document.querySelectorAll('.deck-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.deck-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderCardList(tab.dataset.deck);
+    });
+  });
+  renderCardList('economic');
+}
+
+// ── Panel Navigation ──────────────────────────────────────
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.panel === name);
+  });
+}
+
+// ── Season UI ─────────────────────────────────────────────
+function refreshSeasonUI() {
+  const week  = seasonData.currentWeek || 1;
+  const phase = GameEngine.getPhase(week);
+  const vol   = seasonData.volatility || 40;
+
+  document.getElementById('topWeek').textContent    = week;
+  document.getElementById('topPhase').textContent   = phase.name;
+  document.getElementById('dashWeek').textContent   = week;
+  document.getElementById('dashVol').textContent    = vol;
+  document.getElementById('seasonWeekDisplay').textContent = 'Week ' + week;
+  document.getElementById('volSlider').value        = vol;
+  document.getElementById('volDisplay').textContent = vol;
+
+  renderDashStandings();
+}
+
+// ── Team UI ───────────────────────────────────────────────
+function refreshTeamUI() {
+  const teams = Object.entries(teamsData);
+  document.getElementById('dashTeams').textContent = teams.length;
+
+  // Team list in Teams panel
+  const container = document.getElementById('teamList');
+  if (!teams.length) {
+    container.innerHTML = `<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px">No teams yet. Add one above.</div>`;
+    return;
+  }
+
+  container.innerHTML = teams.map(([id, team]) => {
+    const stats = team.stats || {};
+    const score = GameEngine.calcMarketScore(stats);
+    return `
+      <div class="team-card">
+        <div>
+          <div class="team-brand-name">${team.brandName || 'Unnamed'}</div>
+          <div class="team-details">
+            ${team.industry} · ${team.country} · ${team.targetDemo}<br>
+            Members: ${team.members || 'N/A'}<br>
+            Components: ${team.componentTier} · Shipping: ${team.shippingMethod} · Price: ${team.pricePoint}
+          </div>
+          <div style="margin-top:10px">
+            ${renderStatBars(stats)}
+          </div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--amber);margin-top:8px">
+            Market Score: ${score}
+          </div>
+        </div>
+        <div class="team-actions">
+          <button class="btn small secondary" onclick="printNewspaper('${id}')">🗞️ Print</button>
+          <button class="btn small danger" onclick="confirmDeleteTeam('${id}', '${team.brandName}')">✕</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderStatBars(stats) {
+  const statDefs = [
+    { key: 'budget', label: 'Budget' },
+    { key: 'demand', label: 'Demand' },
+    { key: 'reputation', label: 'Reputation' },
+    { key: 'innovation', label: 'Innovation' },
+    { key: 'risk', label: 'Risk' },
+  ];
+  return statDefs.map(s => {
+    const val   = stats[s.key] ?? 0;
+    const color = GameEngine.statColor(s.key, val);
+    return `
+      <div class="stat-row">
+        <div class="stat-label">${s.label}</div>
+        <div class="stat-track">
+          <div class="stat-fill" style="width:${val}%;background:${color}"></div>
+        </div>
+        <div class="stat-val">${val}</div>
+      </div>`;
+  }).join('');
+}
+
+function refreshTeamSelects() {
+  const teams = Object.entries(teamsData);
+  const options = teams.map(([id, t]) => `<option value="${id}">${t.brandName}</option>`).join('');
+  ['eventTeamSelect','scoreTeamSelect','overrideTeam'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = `<option value="">— Choose a team —</option>` + options;
+  });
+}
+
+// ── Add Team ──────────────────────────────────────────────
+function addTeam() {
+  const brandName = document.getElementById('newBrandName').value.trim();
+  if (!brandName) { showToast('Enter a brand name.', true); return; }
+
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const dossier = GameEngine.generateBrandDossier(brandName);
+
+  // Override with manual selections
+  const industry = document.getElementById('newIndustry').value || dossier.industry;
+  const country  = document.getElementById('newCountry').value  || dossier.country;
+  const demo     = document.getElementById('newDemo').value     || dossier.targetDemo;
+  const members  = document.getElementById('newTeamMembers').value.trim();
+
+  const team = { ...dossier, industry, country, targetDemo: demo, members };
+  const teamId = 'team_' + Date.now();
+
+  db.ref('teams/' + teamId).set(team).then(() => {
+    showToast(`✓ Team "${brandName}" created!`);
+    document.getElementById('newBrandName').value = '';
+    document.getElementById('newTeamMembers').value = '';
+  });
+}
+
+// ── Dashboard Standings ───────────────────────────────────
+function renderDashStandings() {
+  const container = document.getElementById('dashStandings');
+  const teams = Object.entries(teamsData);
+  if (!teams.length) { container.innerHTML = '<div style="font-family:var(--mono);font-size:12px;color:var(--muted)">No teams yet.</div>'; return; }
+
+  const sorted = teams
+    .map(([id, t]) => ({ id, ...t, score: GameEngine.calcMarketScore(t.stats || {}) }))
+    .sort((a, b) => b.score - a.score);
+
+  container.innerHTML = `<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px">
+    <tr style="color:var(--muted);border-bottom:1px solid var(--border)">
+      <th style="text-align:left;padding:6px 8px">Rank</th>
+      <th style="text-align:left;padding:6px 8px">Brand</th>
+      <th style="padding:6px 8px">Budget</th>
+      <th style="padding:6px 8px">Demand</th>
+      <th style="padding:6px 8px">Rep</th>
+      <th style="padding:6px 8px">Innov</th>
+      <th style="padding:6px 8px">Risk</th>
+      <th style="padding:6px 8px;color:var(--amber)">Score</th>
+    </tr>
+    ${sorted.map((t, i) => `
+    <tr style="border-bottom:1px solid rgba(46,46,63,0.5)">
+      <td style="padding:6px 8px;color:var(--muted)">${i+1}</td>
+      <td style="padding:6px 8px;color:var(--text)">${t.brandName || '?'}</td>
+      <td style="padding:6px 8px;text-align:center;color:${GameEngine.statColor('budget',t.stats?.budget||0)}">${t.stats?.budget??'—'}</td>
+      <td style="padding:6px 8px;text-align:center;color:${GameEngine.statColor('demand',t.stats?.demand||0)}">${t.stats?.demand??'—'}</td>
+      <td style="padding:6px 8px;text-align:center;color:${GameEngine.statColor('reputation',t.stats?.reputation||0)}">${t.stats?.reputation??'—'}</td>
+      <td style="padding:6px 8px;text-align:center;color:${GameEngine.statColor('innovation',t.stats?.innovation||0)}">${t.stats?.innovation??'—'}</td>
+      <td style="padding:6px 8px;text-align:center;color:${GameEngine.statColor('risk',t.stats?.risk||0)}">${t.stats?.risk??'—'}</td>
+      <td style="padding:6px 8px;text-align:center;color:var(--amber);font-weight:600">${t.score}</td>
+    </tr>`).join('')}
+  </table>`;
+}
+
+// ── Event Cards ───────────────────────────────────────────
+let selectedCard = null;
+let selectedChoice = null;
+
+function renderCardList(deck) {
+  selectedCard = null; selectedChoice = null;
+  document.getElementById('choiceCard').style.display = 'none';
+
+  const cards = CardLibrary.getByDeck(deck);
+  document.getElementById('cardList').innerHTML = cards.map(card => {
+    const effects = Object.entries(card.effects).map(([k, v]) => {
+      if (v === 0) return '';
+      const pos = v > 0;
+      return `<span class="effect-chip ${pos?'pos':'neg'}">${k} ${pos?'+':''}${v}</span>`;
+    }).filter(Boolean).join('');
+
+    return `
+      <div class="event-option" data-id="${card.id}" onclick="selectCard('${card.id}')">
+        <div class="event-option-title">${card.title}</div>
+        <div class="event-option-story">${card.storyText}</div>
+        <div class="event-effects">${effects}
+          ${card.hasChoice ? '<span class="effect-chip" style="color:var(--amber);border-color:rgba(245,166,35,0.3)">Has Choice</span>' : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function selectCard(cardId) {
+  selectedCard = CardLibrary.getById(cardId);
+  document.querySelectorAll('.event-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === cardId);
+  });
+
+  const choiceCard = document.getElementById('choiceCard');
+  const choiceOpts = document.getElementById('choiceOptions');
+  choiceCard.style.display = 'block';
+
+  if (selectedCard.hasChoice) {
+    choiceOpts.innerHTML = `
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:12px">Select which choice the team made:</div>
+      <div class="event-option" style="margin-bottom:10px;cursor:pointer" onclick="selectChoice('A')">
+        <div class="event-option-title">Choice A: ${selectedCard.choiceA.text}</div>
+        <div class="event-effects">
+          ${Object.entries(selectedCard.choiceA.effects).map(([k,v]) =>
+            `<span class="effect-chip ${v>0?'pos':'neg'}">${k} ${v>0?'+':''}${v}</span>`).join('')}
+        </div>
+      </div>
+      <div class="event-option" style="cursor:pointer" onclick="selectChoice('B')">
+        <div class="event-option-title">Choice B: ${selectedCard.choiceB.text}</div>
+        <div class="event-effects">
+          ${Object.entries(selectedCard.choiceB.effects).map(([k,v]) =>
+            `<span class="effect-chip ${v>0?'pos':'neg'}">${k} ${v>0?'+':''}${v}</span>`).join('')}
+        </div>
+      </div>`;
+  } else {
+    selectedChoice = null;
+    choiceOpts.innerHTML = `<div style="font-family:var(--mono);font-size:12px;color:var(--text2)">No choice — effects apply directly.</div>`;
+  }
+}
+
+function selectChoice(ch) {
+  selectedChoice = ch;
+  document.querySelectorAll('#choiceOptions .event-option').forEach((el, i) => {
+    el.classList.toggle('selected', (i === 0 && ch === 'A') || (i === 1 && ch === 'B'));
+  });
+}
+
+function drawRandomCard() {
+  const activeDeck = document.querySelector('.deck-tab.active').dataset.deck;
+  const card = CardLibrary.getRandom(activeDeck);
+  selectCard(card.id);
+  // Scroll into view
+  document.querySelector(`[data-id="${card.id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function applySelectedEvent() {
+  const teamId = document.getElementById('eventTeamSelect').value;
+  if (!teamId) { showToast('Select a team first.', true); return; }
+  if (!selectedCard) { showToast('Select an event card.', true); return; }
+  if (selectedCard.hasChoice && !selectedChoice) { showToast('Select which choice the team made.', true); return; }
+
+  const team  = teamsData[teamId];
+  let effects = { ...selectedCard.effects };
+  if (selectedCard.hasChoice) {
+    effects = selectedChoice === 'A' ? selectedCard.choiceA.effects : selectedCard.choiceB.effects;
+  }
+
+  const newStats = GameEngine.applyCardEffects(team.stats, effects, seasonData.volatility || 40);
+  const crisis   = GameEngine.checkCrisis(newStats);
+
+  // Build log entry
+  const logEntry = {
+    week: seasonData.currentWeek || 1,
+    cardId: selectedCard.id,
+    cardTitle: selectedCard.title,
+    deck: selectedCard.deck,
+    choice: selectedChoice,
+    effects,
+    timestamp: Date.now(),
+  };
+
+  const updates = {};
+  updates[`teams/${teamId}/stats`] = newStats;
+  updates[`teams/${teamId}/eventLog/${Date.now()}`] = logEntry;
+  updates[`season/activeCards/${teamId}`] = { cardId: selectedCard.id, timestamp: Date.now() };
+
+  db.ref().update(updates).then(() => {
+    let msg = `✓ Event "${selectedCard.title}" applied to ${team.brandName}`;
+    if (crisis) msg += ` — ⚠ ${crisis.message}`;
+    showToast(msg);
+  });
+}
+
+// ── Scoring ───────────────────────────────────────────────
+let selectedScore = null;
+
+function populateDeliverableDropdown() {
+  const select = document.getElementById('scoreDeliverable');
+  select.innerHTML = '<option value="">— Choose deliverable —</option>' +
+    Object.entries(DELIVERABLE_TYPES).map(([key, d]) =>
+      `<option value="${key}">${d.label} (Phase ${d.phase})</option>`
+    ).join('');
+}
+
+function selectScore(val) {
+  selectedScore = val;
+  [1, 3, 5].forEach(v => {
+    document.getElementById(`scoreBtn${v}`).className = `score-btn${val === v ? ` selected-${v}` : ''}`;
+  });
+  updateScorePreview();
+}
+
+function updateScorePreview() {
+  const preview = document.getElementById('scorePreview');
+  const teamId  = document.getElementById('scoreTeamSelect').value;
+  const delKey  = document.getElementById('scoreDeliverable').value;
+  if (!teamId || !delKey || !selectedScore) { preview.textContent = ''; return; }
+
+  const del    = DELIVERABLE_TYPES[delKey];
+  const effect = GAME_CONFIG.scoreEffects[selectedScore];
+  const boost  = Math.round(8 * effect.multiplier);
+  const affectsText = del.affects.map(s =>
+    s === 'risk' ? `Risk −${boost}` : `${s.charAt(0).toUpperCase()+s.slice(1)} +${boost}`
+  ).join(', ');
+  preview.textContent = `${effect.label}: +${effect.points} pts · Stat changes: ${affectsText}`;
+}
+
+function applyScore() {
+  const teamId = document.getElementById('scoreTeamSelect').value;
+  const delKey = document.getElementById('scoreDeliverable').value;
+  if (!teamId || !delKey || !selectedScore) { showToast('Fill in all fields.', true); return; }
+
+  const team     = teamsData[teamId];
+  const effect   = GAME_CONFIG.scoreEffects[selectedScore];
+  const newStats = GameEngine.applyDeliverableScore(team.stats, delKey, selectedScore);
+
+  const logEntry = {
+    week: seasonData.currentWeek || 1,
+    deliverable: delKey,
+    score: selectedScore,
+    label: effect.label,
+    points: effect.points,
+    timestamp: Date.now(),
+  };
+
+  const updates = {};
+  updates[`teams/${teamId}/stats`] = newStats;
+  updates[`teams/${teamId}/totalPoints`] = (team.totalPoints || 0) + effect.points;
+  updates[`teams/${teamId}/scoreLog/${Date.now()}`] = logEntry;
+
+  db.ref().update(updates).then(() => {
+    showToast(`✓ Score applied to ${team.brandName}: ${effect.label}`);
+    loadScoreLog();
+  });
+}
+
+function loadScoreLog() {
+  const teamId = document.getElementById('scoreTeamSelect').value;
+  if (!teamId) return;
+  const log = Object.values(teamsData[teamId]?.scoreLog || {});
+  if (!log.length) { document.getElementById('scoreLog').textContent = 'No scores yet.'; return; }
+  const sorted = log.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
+  document.getElementById('scoreLog').innerHTML = sorted.map(e =>
+    `<div style="padding:4px 0;border-bottom:1px solid var(--border)">
+      Week ${e.week} · ${DELIVERABLE_TYPES[e.deliverable]?.label || e.deliverable} · <span style="color:var(--amber)">${e.label}</span> (+${e.points} pts)
+    </div>`
+  ).join('');
+}
+
+// ── Week Control ──────────────────────────────────────────
+function advanceWeek() {
+  const current = seasonData.currentWeek || 1;
+  if (current >= 18) { showToast('Already at final week.', true); return; }
+  triggerDailyStockUpdate(() => {
+    db.ref('season/currentWeek').set(current + 1).then(() => {
+      // Clear active cards for new week
+      db.ref('season/activeCards').remove();
+      showToast(`✓ Advanced to Week ${current + 1}`);
+    });
+  });
+}
+
+function adjustWeek(delta) {
+  const current = seasonData.currentWeek || 1;
+  const newWeek = Math.max(1, Math.min(18, current + delta));
+  db.ref('season/currentWeek').set(newWeek);
+}
+
+// ── Stock Update ──────────────────────────────────────────
+function triggerDailyStockUpdate(callback) {
+  const teams = Object.entries(teamsData);
+  if (!teams.length) { if (callback) callback(); return; }
+
+  const updates = {};
+  teams.forEach(([id, team]) => {
+    const score = GameEngine.calcMarketScore(team.stats || {});
+    const price = GameEngine.calcStockPrice(score, seasonData.volatility || 40);
+    const history = [...(team.stockHistory || []), price].slice(-20); // keep last 20
+    updates[`teams/${id}/stockHistory`] = history;
+  });
+
+  db.ref().update(updates).then(() => {
+    showToast('📈 Stock prices updated!');
+    if (callback) callback();
+  });
+}
+
+// ── Volatility ────────────────────────────────────────────
+function saveVolatility() {
+  const val = parseInt(document.getElementById('volSlider').value);
+  db.ref('season/volatility').set(val).then(() => showToast(`Volatility set to ${val}`));
+}
+
+// ── Override Stats ────────────────────────────────────────
+function loadOverrideStats() {
+  const teamId = document.getElementById('overrideTeam').value;
+  const container = document.getElementById('overrideFields');
+  if (!teamId) { container.innerHTML = ''; return; }
+
+  const stats = teamsData[teamId]?.stats || {};
+  const fields = ['budget','demand','reputation','innovation','risk'];
+  container.innerHTML = `<div class="grid-3" style="margin-bottom:12px">
+    ${fields.map(s => `
+      <div>
+        <label>${s.charAt(0).toUpperCase()+s.slice(1)}</label>
+        <input type="number" id="override_${s}" min="0" max="100" value="${stats[s]??50}">
+      </div>`).join('')}
+  </div>`;
+}
+
+function saveOverrideStats() {
+  const teamId = document.getElementById('overrideTeam').value;
+  if (!teamId) { showToast('Select a team.', true); return; }
+
+  const fields = ['budget','demand','reputation','innovation','risk'];
+  const stats  = {};
+  fields.forEach(s => {
+    stats[s] = parseInt(document.getElementById(`override_${s}`)?.value || 50);
+  });
+
+  db.ref(`teams/${teamId}/stats`).set(stats).then(() => showToast('Stats updated!'));
+}
+
+// ── Delete Team ───────────────────────────────────────────
+function confirmDeleteTeam(teamId, brandName) {
+  openModal(
+    `Delete ${brandName}?`,
+    `This will permanently remove all data for "${brandName}". This cannot be undone.`,
+    () => db.ref('teams/' + teamId).remove().then(() => showToast(`"${brandName}" deleted.`))
+  );
+}
+
+// ── Print Newspaper ───────────────────────────────────────
+function printNewspaper(teamId) {
+  const url = `newspaper.html?team=${teamId}&week=${seasonData.currentWeek||1}`;
+  window.open(url, '_blank');
+}
+
+// ── Reset Season ──────────────────────────────────────────
+function confirmResetSeason() {
+  openModal(
+    '⚠ Reset Entire Season?',
+    'This will DELETE all teams, scores, and event history. The season will restart from Week 1. This cannot be undone.',
+    () => {
+      db.ref().set({
+        season: GameEngine.generateNewSeason(),
+        teams: {}
+      }).then(() => showToast('Season reset to Week 1.'));
+    }
+  );
+}
+
+// ── Toast ─────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+// ── Modal ─────────────────────────────────────────────────
+function openModal(title, body, onConfirm) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').textContent  = body;
+  document.getElementById('modalConfirmBtn').onclick = () => { onConfirm(); closeModal(); };
+  document.getElementById('confirmModal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('confirmModal').classList.remove('open');
+}
+</script>
+</body>
+</html>

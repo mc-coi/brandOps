@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Bulletin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=UnifrakturMaguntia&family=IBM+Plex+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #f5f0e8;
+    color: #1a1008;
+    font-family: 'Lora', Georgia, serif;
+    padding: 0;
+  }
+
+  /* Print setup */
+  @media print {
+    body { background: white; }
+    .no-print { display: none !important; }
+    .newspaper { box-shadow: none !important; margin: 0 !important; padding: 20px !important; }
+    @page { margin: 0.5in; size: letter; }
+  }
+
+  /* Print button */
+  .print-bar {
+    background: #1a1008;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+  .print-btn {
+    background: #f5a623;
+    color: #000;
+    border: none;
+    padding: 8px 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .print-btn:hover { background: #d4891a; }
+
+  /* Newspaper container */
+  .newspaper {
+    max-width: 800px;
+    margin: 24px auto;
+    background: #faf6ec;
+    border: 1px solid #c8b88a;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+    padding: 32px 36px;
+    position: relative;
+  }
+
+  /* Dateline */
+  .dateline {
+    text-align: center;
+    border-bottom: 2px solid #1a1008;
+    border-top: 2px solid #1a1008;
+    padding: 4px 0;
+    margin-bottom: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Masthead */
+  .paper-title {
+    text-align: center;
+    font-family: 'UnifrakturMaguntia', serif;
+    font-size: 58px;
+    line-height: 1;
+    color: #1a1008;
+    padding: 12px 0;
+    letter-spacing: 0.01em;
+  }
+  .paper-subtitle {
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #6b5a3a;
+    border-top: 1px solid #1a1008;
+    border-bottom: 1px solid #1a1008;
+    padding: 5px 0;
+    margin-bottom: 20px;
+  }
+
+  /* Headline */
+  .main-headline {
+    text-align: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    border-bottom: 3px double #1a1008;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  .deck-hed {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    text-align: center;
+    color: #4a3820;
+    margin-bottom: 18px;
+    border-bottom: 1px solid #c8b88a;
+    padding-bottom: 14px;
+  }
+
+  /* Two-column layout */
+  .columns {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    border-bottom: 1px solid #c8b88a;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+  }
+
+  .byline {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6b5a3a;
+    margin-bottom: 10px;
+  }
+
+  /* Story text */
+  .story-body {
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: #1a1008;
+    text-align: justify;
+    hyphens: auto;
+  }
+  .story-body p { margin-bottom: 10px; }
+  .story-body p:first-child::first-letter {
+    font-family: 'Playfair Display', serif;
+    font-size: 44px;
+    font-weight: 900;
+    float: left;
+    line-height: 0.8;
+    margin: 4px 6px 0 0;
+    color: #1a1008;
+  }
+
+  /* Stat table - right column */
+  .stat-box {
+    border: 2px solid #1a1008;
+    padding: 12px;
+  }
+  .stat-box-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #1a1008;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .stat-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px dotted #c8b88a;
+    font-size: 11px;
+  }
+  .stat-line:last-child { border: none; }
+  .stat-line .stat-name { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: #6b5a3a; }
+  .stat-line .stat-num  { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; }
+  .stat-bar-mini { 
+    width: 100%; height: 4px; background: #e8dcc8; margin-top: 3px; margin-bottom: 3px;
+  }
+  .stat-bar-fill { height: 100%; }
+
+  /* Market score callout */
+  .market-callout {
+    margin: 10px 0;
+    border: 2px solid #1a1008;
+    padding: 8px;
+    text-align: center;
+    background: #1a1008;
+    color: #f5a623;
+  }
+  .market-callout .num {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .market-callout .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #c8a060;
+    margin-top: 2px;
+  }
+
+  /* Stock price */
+  .stock-line {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-align: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #c8b88a;
+    color: #4a3820;
+  }
+  .stock-line .price { font-size: 16px; font-weight: 600; color: #1a1008; }
+  .stock-up   { color: #166534; }
+  .stock-down { color: #991b1b; }
+
+  /* Bottom strip - brand dossier */
+  .dossier-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    border: 1px solid #1a1008;
+    border-top: 3px solid #1a1008;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .dossier-field {
+    padding: 8px 10px;
+    border-right: 1px solid #1a1008;
+    font-size: 10px;
+  }
+  .dossier-field:last-child { border-right: none; }
+  .dossier-key { font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: #6b5a3a; margin-bottom: 4px; }
+  .dossier-val { font-size: 11px; font-weight: 600; color: #1a1008; }
+
+  /* Event log */
+  .event-section { margin-top: 16px; }
+  .section-rule {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #6b5a3a;
+    border-bottom: 1px solid #c8b88a;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+  }
+  .event-mini {
+    font-size: 11px;
+    padding: 6px 0;
+    border-bottom: 1px dotted #c8b88a;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    line-height: 1.4;
+  }
+  .event-mini .week-tag { 
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: #6b5a3a;
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+
+  /* Rank badge */
+  .rank-badge {
+    display: inline-block;
+    background: #1a1008;
+    color: #f5a623;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  /* Phase tag */
+  .phase-tag {
+    display: inline-block;
+    border: 1px solid #1a1008;
+    padding: 2px 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-left: 8px;
+    vertical-align: middle;
+    color: #4a3820;
+  }
+
+  /* Loading */
+  #loadingState {
+    text-align: center;
+    padding: 60px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: #6b5a3a;
+  }
+</style>
+</head>
+<body>
+
+<div class="print-bar no-print">
+  <span style="color:#c8a060;font-family:'IBM Plex Mono',monospace;font-size:11px">BrandOps Newspaper View</span>
+  <button class="print-btn" onclick="window.print()">🖨 Print / Save PDF</button>
+  <button class="print-btn" style="background:#333;color:#fff" onclick="window.close()">✕ Close</button>
+</div>
+
+<div id="loadingState">Loading brand report...</div>
+
+<div class="newspaper" id="newspaper" style="display:none">
+  <!-- Dateline -->
+  <div class="dateline">
+    <span id="nlDate">—</span>
+    <span>Multimedia Marketing Simulation</span>
+    <span id="nlWeekVol">—</span>
+  </div>
+
+  <!-- Masthead -->
+  <div class="paper-title">The Brand Bulletin</div>
+  <div class="paper-subtitle">Exclusive Market Intelligence · Official Season Report</div>
+
+  <!-- Headline -->
+  <div class="main-headline" id="nlHeadline">Brand Name</div>
+  <div class="deck-hed" id="nlDeckHed">Industry · Country · Target Demographic</div>
+
+  <!-- Body -->
+  <div class="columns">
+    <div>
+      <div class="byline">By the Brand Ops Market Desk &nbsp;|&nbsp; Week <span id="nlBylineWeek">—</span></div>
+      <div class="story-body" id="nlStoryBody">
+        <p>Loading story...</p>
+      </div>
+
+      <!-- Event log -->
+      <div class="event-section" id="eventSection">
+        <div class="section-rule">Recent Market Events</div>
+        <div id="nlEventLog">No events recorded.</div>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div>
+      <!-- Market score -->
+      <div class="market-callout">
+        <div class="num" id="nlMarketScore">—</div>
+        <div class="label">Market Score</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-box" style="margin-top:12px">
+        <div class="stat-box-title">Performance Index</div>
+        <div id="nlStatLines">—</div>
+      </div>
+
+      <!-- Stock -->
+      <div class="stock-line">
+        <div class="price" id="nlStockPrice">$—</div>
+        <div>Current Stock Price</div>
+        <div id="nlStockTrend" style="margin-top:3px">—</div>
+      </div>
+
+      <!-- Rank -->
+      <div style="margin-top:12px;text-align:center">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6b5a3a;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Season Ranking</div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900" id="nlRank">#—</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6b5a3a" id="nlRankOf">of — teams</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Brand Dossier Strip -->
+  <div class="section-rule">Brand Dossier</div>
+  <div class="dossier-strip" id="nlDossier"></div>
+
+  <!-- Score history -->
+  <div style="margin-top:16px">
+    <div class="section-rule">Deliverable Score History</div>
+    <div id="nlScoreLog" style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:2;color:#4a3820">No scores recorded yet.</div>
+  </div>
+
+</div><!-- /newspaper -->
+
+<script src="js/firebase-config.js"></script>
+<script src="js/game-engine.js"></script>
+<script src="js/event-cards.js"></script>
+
+<script>
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.database();
+
+// Get params
+const params  = new URLSearchParams(window.location.search);
+const teamId  = params.get('team');
+const weekNum = parseInt(params.get('week')) || 1;
+
+if (!teamId) {
+  document.getElementById('loadingState').textContent = 'No team specified.';
+} else {
+  loadNewspaper();
+}
+
+async function loadNewspaper() {
+  const [teamSnap, seasonSnap, allTeamsSnap] = await Promise.all([
+    db.ref('teams/' + teamId).get(),
+    db.ref('season').get(),
+    db.ref('teams').get(),
+  ]);
+
+  const team     = teamSnap.val();
+  const season   = seasonSnap.val() || {};
+  const allTeams = allTeamsSnap.val() || {};
+
+  if (!team) {
+    document.getElementById('loadingState').textContent = 'Team not found.';
+    return;
+  }
+
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('newspaper').style.display = 'block';
+
+  const stats  = team.stats || {};
+  const score  = GameEngine.calcMarketScore(stats);
+  const phase  = GameEngine.getPhase(weekNum);
+  const trend  = GameEngine.stockTrend(team.stockHistory || []);
+  const stock  = team.stockHistory?.length
+    ? team.stockHistory[team.stockHistory.length - 1].toFixed(2)
+    : GameEngine.calcStockPrice(score, season.volatility || 40).toFixed(2);
+
+  // Ranking
+  const allScores = Object.values(allTeams)
+    .map(t => GameEngine.calcMarketScore(t.stats || {}))
+    .sort((a, b) => b - a);
+  const rank      = allScores.indexOf(score) + 1;
+  const teamCount = allScores.length;
+
+  // Date
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  // Populate
+  document.getElementById('nlDate').textContent      = dateStr;
+  document.getElementById('nlWeekVol').textContent   = `Week ${weekNum} · Volatility ${season.volatility || '—'}`;
+  document.getElementById('nlHeadline').textContent  = team.brandName || 'Unknown Brand';
+  document.getElementById('nlDeckHed').innerHTML     =
+    `${team.industry} · ${team.country} · ${team.targetDemo}
+    <span class="rank-badge">#${rank} of ${teamCount}</span>
+    <span class="phase-tag">${phase.emoji} ${phase.name}</span>`;
+  document.getElementById('nlBylineWeek').textContent = weekNum;
+  document.getElementById('nlMarketScore').textContent = score;
+  document.getElementById('nlRank').textContent       = '#' + rank;
+  document.getElementById('nlRankOf').textContent     = `of ${teamCount} teams`;
+
+  // Stock
+  document.getElementById('nlStockPrice').textContent = '$' + stock;
+  document.getElementById('nlStockTrend').innerHTML   =
+    trend.diff
+      ? `<span class="${trend.arrow === '▲' ? 'stock-up' : 'stock-down'}">${trend.arrow} ${trend.diff} from last period</span>`
+      : 'No prior data';
+
+  // Stat lines
+  const statDefs = [
+    { key: 'budget',     label: 'Budget'     },
+    { key: 'demand',     label: 'Demand'     },
+    { key: 'reputation', label: 'Reputation' },
+    { key: 'innovation', label: 'Innovation' },
+    { key: 'risk',       label: 'Risk'       },
+  ];
+  document.getElementById('nlStatLines').innerHTML = statDefs.map(s => {
+    const val   = stats[s.key] ?? 0;
+    const color = GameEngine.statColor(s.key, val);
+    const grade = val > 70 ? 'A' : val > 50 ? 'B' : val > 30 ? 'C' : 'D';
+    return `
+      <div class="stat-line">
+        <div>
+          <div class="stat-name">${s.label}</div>
+          <div class="stat-bar-mini"><div class="stat-bar-fill" style="width:${val}%;background:${color}"></div></div>
+        </div>
+        <div class="stat-num" style="color:${color}">${val}</div>
+      </div>`;
+  }).join('');
+
+  // Story body — generate narrative from stats
+  document.getElementById('nlStoryBody').innerHTML = generateStory(team, stats, score, rank, teamCount, weekNum, phase, season);
+
+  // Event log
+  const events = Object.values(team.eventLog || {}).sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
+  document.getElementById('nlEventLog').innerHTML = events.length
+    ? events.map(e => `
+        <div class="event-mini">
+          <div class="week-tag">WK ${e.week}</div>
+          <div><strong>${e.cardTitle}</strong> — ${e.deck} event
+            ${e.choice ? `(Choice ${e.choice})` : ''}
+          </div>
+        </div>`).join('')
+    : '<div style="font-size:11px;color:#6b5a3a;font-style:italic">No events have affected this brand yet.</div>';
+
+  // Dossier strip
+  const fields = [
+    { key: 'Industry',    val: team.industry        },
+    { key: 'Country',     val: team.country         },
+    { key: 'Target Demo', val: team.targetDemo      },
+    { key: 'Components',  val: team.componentTier   },
+    { key: 'Price Point', val: team.pricePoint      },
+  ];
+  document.getElementById('nlDossier').innerHTML = fields.map(f => `
+    <div class="dossier-field">
+      <div class="dossier-key">${f.key}</div>
+      <div class="dossier-val">${f.val || '—'}</div>
+    </div>`).join('');
+
+  // Score log
+  const scores = Object.values(team.scoreLog || {}).sort((a, b) => b.timestamp - a.timestamp);
+  document.getElementById('nlScoreLog').innerHTML = scores.length
+    ? scores.map(s => {
+        const del = DELIVERABLE_TYPES[s.deliverable];
+        return `<span style="display:inline-block;margin-right:20px">Wk ${s.week}: ${del?.label || s.deliverable} — <strong>${s.label}</strong> (${s.points > 0 ? '+' : ''}${s.points} pts)</span>`;
+      }).join('') + `<div style="margin-top:6px;font-weight:600">Total Points: ${team.totalPoints || 0}</div>`
+    : 'No deliverables scored yet.';
+}
+
+// ── Story Generator ──────────────────────────────────────
+function generateStory(team, stats, score, rank, total, week, phase, season) {
+  const brandName = team.brandName || 'the brand';
+  const industry  = team.industry || 'the industry';
+  const country   = team.country || 'an international market';
+  const demo      = team.targetDemo || 'their target demographic';
+  const rankWord  = rank === 1 ? 'the market leader' : rank <= 3 ? 'a top contender' : 'a competitive player';
+
+  const demandSentence = stats.demand > 60
+    ? `Consumer demand for ${brandName} products has remained robust, with market interest tracking well above industry averages.`
+    : stats.demand > 35
+    ? `${brandName} has maintained moderate consumer interest, though the brand faces pressure to differentiate in a crowded field.`
+    : `Market demand for ${brandName} has been sluggish this period, raising questions about the brand's connection with ${demo}.`;
+
+  const repSentence = stats.reputation > 60
+    ? `Public sentiment toward the brand is notably positive, bolstered by consistent messaging and quality perception.`
+    : stats.reputation > 35
+    ? `Brand reputation sits at a neutral position — there is significant room to build goodwill through strong campaign execution.`
+    : `Reputation metrics have taken a hit, and analysts suggest the brand must act decisively to recover consumer trust.`;
+
+  const riskSentence = stats.risk > 60
+    ? `Compliance and PR risk indicators are elevated, signaling that leadership must prioritize damage control this period.`
+    : stats.risk > 30
+    ? `Risk exposure is moderate. Continued vigilance around regulatory and reputational vulnerabilities is advised.`
+    : `The brand is operating in a relatively low-risk environment, providing an opportunity to pursue bolder strategies.`;
+
+  const volNote = (season.volatility || 40) > 70
+    ? `Market volatility is at extreme levels this period, amplifying both opportunities and threats for all active brands.`
+    : (season.volatility || 40) > 40
+    ? `The broader market is experiencing moderate turbulence, requiring brands to stay agile.`
+    : `Market conditions are relatively stable, favoring deliberate and well-planned campaign strategies.`;
+
+  return `
+    <p>${brandName}, a ${industry} firm originating from ${country} and targeting ${demo}, enters Week ${week} as ${rankWord} among ${total} brands competing in this season's simulation. With a current Market Score of ${score}, the brand ${score > 150 ? 'stands in a position of strength' : score > 100 ? 'holds a competitive position' : 'faces a critical juncture in its development'}.</p>
+    <p>${demandSentence} ${repSentence}</p>
+    <p>${riskSentence} ${volNote}</p>
+    <p>As the simulation enters ${phase.name}, analysts are watching closely to see how ${brandName}'s team will respond to the demands of this phase. Strong deliverable execution could translate directly into stat improvements and a surge in market ranking.</p>
+  `;
+}
+</script>
+</body>
+</html>
