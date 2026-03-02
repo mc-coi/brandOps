@@ -307,6 +307,8 @@ textarea { resize: vertical; min-height: 60px; }
       &nbsp;|&nbsp;
       <a href="weekly-recap.html" target="_blank" style="color:var(--amber);text-decoration:none">↗ Weekly Recap</a>
       &nbsp;|&nbsp;
+      <a href="display.html" target="_blank" style="color:var(--amber);text-decoration:none">↗ Projector</a>
+      &nbsp;|&nbsp;
       <a href="index.html" target="_blank" style="color:var(--amber);text-decoration:none">↗ Student View</a>
     </div>
   </div>
@@ -360,6 +362,11 @@ textarea { resize: vertical; min-height: 60px; }
         <div class="card">
           <div class="card-title">Team Standings</div>
           <div id="dashStandings">Loading...</div>
+        </div>
+
+        <div class="card" id="watchListCard" style="border-color:rgba(239,68,68,0.3);display:none">
+          <div class="card-title" style="color:var(--yellow)">⚠ Watch List — Brands Needing Attention</div>
+          <div id="watchList"></div>
         </div>
       </div>
 
@@ -774,6 +781,7 @@ function refreshTeamUI() {
           <button class="btn small secondary" onclick="printNewspaper('${id}')">🗞️ Print</button>
           <button class="btn small secondary" onclick="window.open('brand.html?team=${id}','_blank')">📱 Brand Page</button>
           <button class="btn small secondary" onclick="copyBrandLink('${id}', '${team.brandName}')" title="Copy brand page link">🔗 Copy Link</button>
+          <button class="btn small secondary" onclick="openCompare('${id}')" title="Head-to-head compare">⚔️ Compare</button>
           <button class="btn small danger" onclick="confirmDeleteTeam('${id}', '${team.brandName}')">✕</button>
         </div>
       </div>`;
@@ -957,7 +965,12 @@ function applySelectedEvent() {
     effects = selectedChoice === 'A' ? selectedCard.choiceA.effects : selectedCard.choiceB.effects;
   }
 
-  const newStats = GameEngine.applyCardEffects(team.stats, effects, seasonData.volatility || 40);
+  // Apply rival amplification if this team has a rival
+  const isRival = team.rivalId && teamsData[team.rivalId];
+  const newStats = isRival
+    ? GameEngine.applyCardEffectsRival(team.stats, effects, seasonData.volatility || 40)
+    : GameEngine.applyCardEffects(team.stats, effects, seasonData.volatility || 40);
+  const rivalNote = isRival ? ` ⚔️ RIVAL bonus — effects amplified 1.5x` : '';
   const crisis   = GameEngine.checkCrisis(newStats);
 
   // Build log entry
@@ -977,7 +990,7 @@ function applySelectedEvent() {
   updates[`season/activeCards/${teamId}`] = { cardId: selectedCard.id, timestamp: Date.now() };
 
   db.ref().update(updates).then(() => {
-    let msg = `✓ Event "${selectedCard.title}" applied to ${team.brandName}`;
+    let msg = `✓ Event "${selectedCard.title}" applied to ${team.brandName}${rivalNote}`;
     if (crisis) msg += ` — ⚠ ${crisis.message}`;
     showToast(msg);
   });
@@ -1063,11 +1076,26 @@ function loadScoreLog() {
 function advanceWeek() {
   const current = seasonData.currentWeek || 1;
   if (current >= 18) { showToast('Already at final week.', true); return; }
+  const nextWeek  = current + 1;
+  const curPhase  = GameEngine.getPhase(current);
+  const nextPhase = GameEngine.getPhase(nextWeek);
+  const phaseChanged = curPhase.name !== nextPhase.name;
   triggerDailyStockUpdate(() => {
-    db.ref('season/currentWeek').set(current + 1).then(() => {
-      // Clear active cards for new week
-      db.ref('season/activeCards').remove();
-      showToast(`✓ Advanced to Week ${current + 1}`);
+    const updates = {
+      'season/currentWeek': nextWeek,
+      'season/activeCards': null,
+    };
+    if (phaseChanged) {
+      updates['season/phaseTransition'] = {
+        phase: GAME_CONFIG.phases.indexOf(nextPhase) + 1,
+        name:  nextPhase.name,
+        emoji: nextPhase.emoji,
+        color: nextPhase.color,
+        timestamp: Date.now(),
+      };
+    }
+    db.ref().update(updates).then(() => {
+      showToast(`✓ Advanced to Week ${nextWeek}${phaseChanged ? ' — ' + nextPhase.emoji + ' ' + nextPhase.name + ' begins!' : ''}`);
     });
   });
 }
@@ -1180,6 +1208,36 @@ function openModal(title, body, onConfirm) {
   document.getElementById('modalConfirmBtn').onclick = () => { onConfirm(); closeModal(); };
   document.getElementById('confirmModal').classList.add('open');
 }
+// ── Compare ───────────────────────────────────────────────────
+function openCompare(teamAId) {
+  // Build a quick picker for team B
+  const teams = Object.entries(teamsData).filter(([id]) => id !== teamAId);
+  if (!teams.length) { showToast('Need at least 2 teams.', true); return; }
+  const opts = teams.map(([id, t]) =>
+    `<option value="${id}">${t.brandName}</option>`
+  ).join('');
+  const sel = `<select id="compareBSelect" style="padding:8px;font-family:var(--mono);font-size:13px;background:#1e1e28;color:#e8e3d8;border:1px solid #333;width:100%;margin-top:8px">${opts}</select>`;
+  showConfirmModal(
+    'Compare vs…',
+    `Pick a rival to compare against ${teamsData[teamAId]?.brandName}:${sel}`,
+    () => {
+      const b = document.getElementById('compareBSelect')?.value;
+      if (b) window.open(`compare.html?a=${teamAId}&b=${b}`, '_blank');
+    }
+  );
+}
+
+// ── Members field in addTeam ──────────────────────────────────
+// Members are already wired to newTeamMembers input — ensure it saves
+const _origAddTeam = addTeam;
+// addTeam already reads newTeamMembers so no override needed
+
+// ── Phase transition — write cleared after 8 seconds ─────────
+// (Teacher side: write is done in advanceWeek; this clears the flag)
+function clearPhaseTransition() {
+  db.ref('season/phaseTransition').remove();
+}
+
 function closeModal() {
   document.getElementById('confirmModal').classList.remove('open');
 }

@@ -164,4 +164,23 @@ const GameEngine = {
   formatDollar(val) {
     return '$' + parseFloat(val || 0).toFixed(2);
   },
+
+// ── Rival-amplified card effects (1.5x) ──────────────────────
+// Call instead of applyCardEffects when the target has a rival
+applyCardEffectsRival(stats, effects, volatility = 50) {
+  const amplified = {};
+  for (const [k, v] of Object.entries(effects)) {
+    amplified[k] = Math.round(v * 1.5);
+  }
+  return this.applyCardEffects(stats, amplified, volatility);
+},
+
+// ── Watch-list thresholds ─────────────────────────────────────
+watchListFlags(stats) {
+  const flags = [];
+  if ((stats.risk      || 0) > 60)  flags.push({ label: 'High Risk',       color: '#ef4444', stat: 'risk',      val: stats.risk });
+  if ((stats.sentiment || 50) < 25) flags.push({ label: 'Low Sentiment',   color: '#f97316', stat: 'sentiment', val: stats.sentiment });
+  if ((stats.budget    || 0) < 15)  flags.push({ label: 'Budget Critical', color: '#eab308', stat: 'budget',    val: stats.budget });
+  return flags;
+}
 };

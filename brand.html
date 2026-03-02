@@ -131,6 +131,34 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .dossier-key{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;}
 .dossier-val{font-family:var(--sans);font-size:12px;color:var(--text);text-align:right;}
 .empty-state{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:20px 0;font-style:italic;}
+
+/* ── Phase Transition Overlay ──────────────────────────────── */
+#phaseOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  animation: overlayIn 0.6s ease forwards;
+}
+@keyframes overlayIn {
+  from { opacity: 0; transform: scale(1.04); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes overlayOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.96); }
+}
+#phaseOverlay.hiding { animation: overlayOut 0.5s ease forwards; }
+#phaseOverlay .po-emoji  { font-size: 80px; line-height: 1; margin-bottom: 16px; }
+#phaseOverlay .po-label  { font-family: 'IBM Plex Mono', monospace; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.7; margin-bottom: 8px; }
+#phaseOverlay .po-name   { font-family: 'Playfair Display', Georgia, serif; font-size: 52px; font-weight: 900; line-height: 1; margin-bottom: 20px; }
+#phaseOverlay .po-quote  { font-family: 'Lora', Georgia, serif; font-size: 18px; font-style: italic; opacity: 0.8; max-width: 480px; line-height: 1.6; }
+#phaseOverlay .po-skip   { position: absolute; bottom: 32px; right: 32px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; opacity: 0.5; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase; }
+#phaseOverlay .po-skip:hover { opacity: 1; }
 </style>
 </head>
 <body>
@@ -295,7 +323,11 @@ if (!TEAM_ID) {
 
   let seasonData = {}, teamData = {}, allTeams = {};
 
-  db.ref('season').on('value', snap => { seasonData = snap.val() || {}; render(); });
+  db.ref('season').on('value', snap => {
+    seasonData = snap.val() || {};
+    checkPhaseTransition(seasonData);
+    render();
+  });
   db.ref('teams').on('value', snap => { allTeams = snap.val() || {}; teamData = allTeams[TEAM_ID] || {}; render(); });
 
   // ── Tabs ──────────────────────────────────────────────────────
@@ -516,5 +548,14 @@ if (!TEAM_ID) {
   }
 }
 </script>
+
+<!-- Phase Transition Overlay -->
+<div id="phaseOverlay">
+  <div class="po-emoji" id="poEmoji">🔵</div>
+  <div class="po-label" id="poLabel">Phase 1 Begins</div>
+  <div class="po-name"  id="poName">Brand Launch</div>
+  <div class="po-quote" id="poQuote">—</div>
+  <div class="po-skip" onclick="dismissOverlay()">Tap to dismiss</div>
+</div>
 </body>
 </html>

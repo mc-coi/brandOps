@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandOps — Class Display</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+:root {
+  --bg:#07070a;--bg2:#0f0f14;--bg3:#14141b;--bg4:#1a1a24;
+  --border:#252530;--amber:#f5a623;--amber2:#d4891a;
+  --green:#22c55e;--red:#ef4444;--yellow:#eab308;
+  --muted:#6b7280;--text:#e8e3d8;--text2:#9d97a0;
+  --serif:'Playfair Display',serif;--mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);}
+body{display:flex;flex-direction:column;font-family:var(--sans);color:var(--text);}
+
+/* ── Stock ticker ── */
+.ticker{height:36px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;overflow:hidden;flex-shrink:0;position:relative;}
+.ticker::before,.ticker::after{content:'';position:absolute;top:0;bottom:0;width:48px;z-index:2;}
+.ticker::before{left:0;background:linear-gradient(90deg,var(--bg2),transparent);}
+.ticker::after{right:0;background:linear-gradient(270deg,var(--bg2),transparent);}
+.ticker-inner{display:flex;gap:0;white-space:nowrap;animation:ticker 30s linear infinite;}
+.ticker-inner:hover{animation-play-state:paused;}
+@keyframes ticker{from{transform:translateX(0);}to{transform:translateX(-50%);}};
+.tick-item{display:inline-flex;align-items:center;gap:8px;padding:0 24px;font-family:var(--mono);font-size:12px;border-right:1px solid var(--border);}
+.tick-name{color:var(--text2);}
+.tick-price{font-weight:600;}
+.tick-arrow{font-size:10px;}
+.tick-dot{width:4px;height:4px;border-radius:50%;background:var(--amber);flex-shrink:0;}
+
+/* ── Main content area ── */
+.main{flex:1;display:grid;grid-template-columns:1fr 340px;overflow:hidden;}
+
+/* ── Center stage (rotating cards) ── */
+.stage{position:relative;overflow:hidden;border-right:1px solid var(--border);}
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:40px;opacity:0;transition:opacity 0.8s ease;pointer-events:none;}
+.slide.active{opacity:1;pointer-events:auto;}
+
+/* ── Brand card slide ── */
+.brand-card{width:100%;max-width:700px;background:var(--bg3);border:1px solid var(--border);padding:40px;}
+.bc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;}
+.bc-name{font-family:var(--serif);font-size:48px;font-weight:900;line-height:1;}
+.bc-meta{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;}
+.bc-score{text-align:right;}
+.bc-score-val{font-family:var(--serif);font-size:56px;font-weight:900;color:var(--amber);line-height:1;}
+.bc-score-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+.bc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+.bc-stat{background:var(--bg4);padding:14px;}
+.bc-stat-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.bc-stat-val{font-family:var(--serif);font-size:28px;font-weight:900;}
+.bc-stat-bar{height:3px;background:var(--bg);margin-top:6px;border-radius:2px;}
+.bc-stat-fill{height:100%;border-radius:2px;}
+.bc-bottom{display:flex;justify-content:space-between;align-items:center;}
+.bc-stock{font-family:var(--mono);font-size:14px;}
+.bc-rank{font-family:var(--mono);font-size:12px;color:var(--muted);}
+
+/* ── Event slide ── */
+.event-card-big{width:100%;max-width:600px;background:var(--bg3);border:1px solid var(--border);padding:44px;}
+.ec-deck{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;}
+.ec-title{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.1;margin-bottom:16px;}
+.ec-story{font-family:var(--sans);font-size:16px;line-height:1.7;color:var(--text2);margin-bottom:20px;}
+.ec-team{font-family:var(--mono);font-size:12px;color:var(--amber);}
+.ec-effects{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.ec-pill{font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:2px;}
+.ec-pos{background:rgba(34,197,94,.15);color:var(--green);}
+.ec-neg{background:rgba(239,68,68,.15);color:var(--red);}
+
+/* ── Phase slide ── */
+.phase-slide-inner{text-align:center;padding:60px;}
+.ps-emoji{font-size:80px;margin-bottom:20px;}
+.ps-label{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.ps-name{font-family:var(--serif);font-size:56px;font-weight:900;margin-bottom:16px;}
+.ps-desc{font-family:var(--sans);font-size:18px;line-height:1.6;color:var(--text2);max-width:560px;margin:0 auto;}
+
+/* ── Sidebar ── */
+.sidebar{background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;}
+.sidebar-section{border-bottom:1px solid var(--border);padding:16px;}
+.sidebar-title{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;}
+
+/* ── Leaderboard ── */
+.lb-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);}
+.lb-row:last-child{border:none;}
+.lb-rank{font-family:var(--mono);font-size:11px;color:var(--muted);width:20px;flex-shrink:0;}
+.lb-name{font-family:var(--sans);font-size:13px;font-weight:500;flex:1;}
+.lb-score{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--amber);}
+.lb-change{font-family:var(--mono);font-size:10px;}
+
+/* ── Market stats ── */
+.market-stat{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px dotted var(--border);}
+.market-stat:last-child{border:none;}
+.ms-label{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.ms-val{font-family:var(--mono);font-size:13px;font-weight:600;}
+
+/* ── Progress dots ── */
+.dots{display:flex;gap:6px;justify-content:center;padding:10px 0;flex-shrink:0;background:var(--bg2);border-top:1px solid var(--border);}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--bg4);cursor:pointer;transition:background .2s;}
+.dot.active{background:var(--amber);}
+.dot:hover{background:var(--text2);}
+
+/* ── Phase transition overlay ── */
+#phaseOverlay {
+  display:none;position:fixed;inset:0;z-index:9999;
+  align-items:center;justify-content:center;flex-direction:column;text-align:center;
+  animation:ovIn .6s ease forwards;
+}
+@keyframes ovIn{from{opacity:0;transform:scale(1.04);}to{opacity:1;transform:scale(1);}}
+@keyframes ovOut{from{opacity:1;}to{opacity:0;}}
+#phaseOverlay.hiding{animation:ovOut .5s ease forwards;}
+#phaseOverlay .po-emoji{font-size:100px;line-height:1;margin-bottom:20px;}
+#phaseOverlay .po-label{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;opacity:.7;margin-bottom:10px;}
+#phaseOverlay .po-name{font-family:var(--serif);font-size:68px;font-weight:900;line-height:1;margin-bottom:24px;}
+#phaseOverlay .po-quote{font-family:var(--sans);font-size:20px;font-style:italic;opacity:.8;max-width:560px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<!-- Ticker -->
+<div class="ticker">
+  <div class="ticker-inner" id="tickerInner">
+    <span style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:0 24px">Loading market data…</span>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Stage -->
+  <div class="stage" id="stage">
+    <div class="slide active" id="slide-loading">
+      <div style="text-align:center">
+        <div style="font-family:var(--serif);font-size:40px;font-weight:900;color:var(--amber)">BrandOps</div>
+        <div style="font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:10px">Connecting to market…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section" style="flex:1;overflow-y:auto">
+      <div class="sidebar-title">Live Standings</div>
+      <div id="sideLeaderboard"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Market</div>
+      <div class="market-stat">
+        <span class="ms-label">Week</span>
+        <span class="ms-val" id="mktWeek" style="color:var(--amber)">—</span>
+      </div>
+      <div class="market-stat">
+        <span class="ms-label">Phase</span>
+        <span class="ms-val" id="mktPhase" style="font-size:11px">—</span>
+      </div>
+      <div class="market-stat">
+        <span class="ms-label">Volatility</span>
+        <span class="ms-val" id="mktVol">—</span>
+      </div>
+      <div class="market-stat">
+        <span class="ms-label">Teams</span>
+        <span class="ms-val" id="mktTeams">—</span>
+      </div>
+    </div>
+    <div class="sidebar-section" style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">
+        <span style="width:6px;height:6px;background:#22c55e;border-radius:50%;display:inline-block;animation:pulse 2s ease infinite;margin-right:4px"></span>
+        LIVE
+      </span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--muted)" id="sideTime">—</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Dots -->
+<div class="dots" id="dots"></div>
+
+<!-- Phase overlay -->
+<div id="phaseOverlay">
+  <div class="po-emoji" id="poEmoji">🔵</div>
+  <div class="po-label" id="poLabel">Phase 1 Begins</div>
+  <div class="po-name"  id="poName">Brand Launch</div>
+  <div class="po-quote" id="poQuote">—</div>
+</div>
+
+<style>@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}</style>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/game-engine.js"></script>
+<script src="js/event-cards.js"></script>
+<script>
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.database();
+let seasonData = {}, teamsData = {};
+let slides = [], currentSlide = 0, rotateTimer;
+let lastTransitionTs = null;
+
+const PHASE_QUOTES = [
+  "Every brand starts as nothing. What you build in the next three weeks is everything.",
+  "The market has no mercy for brands that aren't ready. Show us what you're made of.",
+  "One hundred million people. Sixty seconds. What does your brand say to the entire world?",
+  "The best advertising is the kind audiences don't even realize they're watching.",
+  "The gloves are off. Go after them — or get gone.",
+  "Nothing lasts forever. Rebuild. Relaunch. Prove you deserve a second chapter.",
+];
+
+db.ref('season').on('value', s => {
+  seasonData = s.val() || {};
+  checkPhaseTransition();
+  rebuildSlides();
+  updateSidebar();
+});
+db.ref('teams').on('value', s => {
+  teamsData = s.val() || {};
+  rebuildSlides();
+  updateSidebar();
+  updateTicker();
+});
+
+// Clock
+setInterval(() => {
+  const now = new Date();
+  const el = document.getElementById('sideTime');
+  if (el) el.textContent = now.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
+}, 1000);
+
+// ── Build slides ──────────────────────────────────────────────
+function rebuildSlides() {
+  const week   = seasonData.currentWeek || 1;
+  const phase  = GameEngine.getPhase(week);
+  const teams  = Object.entries(teamsData);
+  if (!teams.length) return;
+
+  const sorted = teams.map(([id,t]) => ({
+    id, ...t, score: GameEngine.calcMarketScore(t.stats || {})
+  })).sort((a,b) => b.score - a.score);
+
+  const newSlides = [];
+
+  // Phase context slide (first)
+  newSlides.push({ type: 'phase', phase, week });
+
+  // One card per brand
+  sorted.forEach((t, i) => newSlides.push({ type: 'brand', team: t, rank: i + 1, total: sorted.length }));
+
+  // Active event cards
+  const events = Object.entries(seasonData.activeCards || {});
+  events.forEach(([tid, cd]) => {
+    const card = CardLibrary.getById(cd.cardId);
+    const team = teamsData[tid];
+    if (card && team) newSlides.push({ type: 'event', card, team, teamId: tid });
+  });
+
+  slides = newSlides;
+  renderDots();
+  renderCurrentSlide();
+  resetTimer();
+}
+
+// ── Render slide ──────────────────────────────────────────────
+function renderCurrentSlide() {
+  const stage = document.getElementById('stage');
+  // Remove old dynamic slides
+  stage.querySelectorAll('.slide:not(#slide-loading)').forEach(el => el.remove());
+  document.getElementById('slide-loading').style.display = 'none';
+
+  if (!slides.length) return;
+
+  const data = slides[currentSlide % slides.length];
+  const el   = document.createElement('div');
+  el.className = 'slide active';
+
+  if (data.type === 'phase') {
+    el.innerHTML = `<div class="phase-slide-inner">
+      <div class="ps-emoji">${data.phase.emoji}</div>
+      <div class="ps-label">Phase ${GAME_CONFIG.phases.indexOf(data.phase)+1} · Week ${data.week} of 18</div>
+      <div class="ps-name" style="color:${data.phase.color}">${data.phase.name}</div>
+      <div class="ps-desc">${phaseDesc(data.phase.name)}</div>
+    </div>`;
+  } else if (data.type === 'brand') {
+    const t     = data.team;
+    const stats = t.stats || {};
+    const hist  = t.stockHistory || [];
+    const price = hist.length ? GameEngine.formatDollar(hist[hist.length-1]) : '$—';
+    const trend = GameEngine.stockTrend(hist);
+    const statDefs = [
+      {k:'demand',l:'Demand'},{k:'reputation',l:'Reputation'},{k:'innovation',l:'Innovation'},
+      {k:'sentiment',l:'Sentiment'},{k:'risk',l:'Risk'},{k:'budget',l:'Budget'},
+    ];
+    el.innerHTML = `<div class="brand-card">
+      <div class="bc-header">
+        <div>
+          <div class="bc-name">${t.brandName}</div>
+          <div class="bc-meta">${t.industry||''} · ${t.targetDemo||''} · ${t.country||''}</div>
+          ${t.members ? `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px">${t.members}</div>` : ''}
+        </div>
+        <div class="bc-score">
+          <div class="bc-score-val">${t.score}</div>
+          <div class="bc-score-label">Market Score</div>
+        </div>
+      </div>
+      <div class="bc-stats">
+        ${statDefs.map(d => {
+          const v = stats[d.k] !== undefined ? stats[d.k] : 0;
+          const c = GameEngine.statColor(d.k, v);
+          return `<div class="bc-stat">
+            <div class="bc-stat-label">${d.l}</div>
+            <div class="bc-stat-val" style="color:${c}">${v}</div>
+            <div class="bc-stat-bar"><div class="bc-stat-fill" style="width:${v}%;background:${c}"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="bc-bottom">
+        <div class="bc-stock" style="color:${trend.color}">${price} ${trend.arrow} ${trend.diff||''}</div>
+        <div class="bc-rank">#${data.rank} of ${data.total} brands</div>
+      </div>
+    </div>`;
+  } else if (data.type === 'event') {
+    const fx = Object.entries(data.card.effects || {});
+    const chips = fx.map(([s,v]) =>
+      `<span class="ec-pill ${v>0?'ec-pos':'ec-neg'}">${s} ${v>0?'+':''}${v}</span>`
+    ).join('');
+    el.innerHTML = `<div class="event-card-big">
+      <div class="ec-deck">${data.card.deck} event</div>
+      <div class="ec-title">${data.card.title}</div>
+      <div class="ec-story">${data.card.storyText}</div>
+      <div class="ec-team">↳ Affecting: ${data.team.brandName}</div>
+      <div class="ec-effects">${chips}</div>
+    </div>`;
+  }
+
+  stage.appendChild(el);
+  updateDots();
+}
+
+// ── Ticker ────────────────────────────────────────────────────
+function updateTicker() {
+  const teams  = Object.values(teamsData);
+  if (!teams.length) return;
+  const sorted = teams.map(t => ({
+    name:  t.brandName,
+    score: GameEngine.calcMarketScore(t.stats || {}),
+    hist:  t.stockHistory || [],
+  })).sort((a,b) => b.score - a.score);
+
+  // Duplicate for seamless loop
+  const html = [...sorted, ...sorted].map(t => {
+    const price = t.hist.length ? GameEngine.formatDollar(t.hist[t.hist.length-1]) : '—';
+    const trend = GameEngine.stockTrend(t.hist);
+    return `<span class="tick-item">
+      <span class="tick-dot"></span>
+      <span class="tick-name">${t.name}</span>
+      <span class="tick-price" style="color:${trend.color}">${price}</span>
+      <span class="tick-arrow" style="color:${trend.color}">${trend.arrow}</span>
+      <span style="color:var(--muted);font-size:10px">MS:${t.score}</span>
+    </span>`;
+  }).join('');
+  document.getElementById('tickerInner').innerHTML = html;
+}
+
+// ── Sidebar ───────────────────────────────────────────────────
+function updateSidebar() {
+  const week  = seasonData.currentWeek || 1;
+  const phase = GameEngine.getPhase(week);
+  const vol   = seasonData.volatility || 40;
+  const teams = Object.values(teamsData);
+
+  document.getElementById('mktWeek').textContent  = week;
+  document.getElementById('mktPhase').textContent = phase.emoji + ' ' + phase.name;
+  document.getElementById('mktVol').textContent   = vol;
+  document.getElementById('mktVol').style.color   = vol > 70 ? '#ef4444' : vol > 40 ? '#eab308' : '#22c55e';
+  document.getElementById('mktTeams').textContent = teams.length;
+
+  const sorted = teams.map(t => ({
+    name: t.brandName, score: GameEngine.calcMarketScore(t.stats || {}),
+    hist: t.stockHistory || []
+  })).sort((a,b) => b.score - a.score);
+
+  document.getElementById('sideLeaderboard').innerHTML = sorted.map((t,i) => {
+    const trend = GameEngine.stockTrend(t.hist);
+    return `<div class="lb-row">
+      <span class="lb-rank">${i+1}</span>
+      <span class="lb-name">${t.name}</span>
+      <span class="lb-score">${t.score}</span>
+      <span class="lb-change" style="color:${trend.color}">${trend.arrow}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Rotation ──────────────────────────────────────────────────
+function resetTimer() {
+  clearInterval(rotateTimer);
+  rotateTimer = setInterval(nextSlide, 7000);
+}
+function nextSlide() {
+  if (!slides.length) return;
+  currentSlide = (currentSlide + 1) % slides.length;
+  renderCurrentSlide();
+}
+function prevSlide() {
+  if (!slides.length) return;
+  currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+  renderCurrentSlide();
+  resetTimer();
+}
+function goToSlide(i) {
+  currentSlide = i;
+  renderCurrentSlide();
+  resetTimer();
+}
+
+// ── Dots ──────────────────────────────────────────────────────
+function renderDots() {
+  document.getElementById('dots').innerHTML = slides.map((_,i) =>
+    `<div class="dot${i===currentSlide?' active':''}" onclick="goToSlide(${i})"></div>`
+  ).join('');
+}
+function updateDots() {
+  document.querySelectorAll('.dot').forEach((d,i) => {
+    d.classList.toggle('active', i === currentSlide % slides.length);
+  });
+}
+
+// ── Phase descriptions ────────────────────────────────────────
+function phaseDesc(name) {
+  const d = {
+    "Brand Launch":        "Teams are establishing who they are. Identity decisions made now will define the entire season.",
+    "Market Pressure":     "Crises are hitting. Watch how each brand handles adversity — this phase separates the strong from the struggling.",
+    "Super Bowl Campaign": "The biggest stage in advertising. Teams are competing for the best 60-second commercial of the season.",
+    "Product Placement":   "Subtle influence. The brands that can make advertising invisible are winning this phase.",
+    "Market War":          "Direct competition. Watch for comparative ads, satirical campaigns, and data-driven attacks.",
+    "Rebrand or Die":      "Terminal events have fired. Every brand is reinventing itself. This is the final chapter.",
+  };
+  return d[name] || 'The market is active.';
+}
+
+// ── Phase transition overlay ──────────────────────────────────
+function checkPhaseTransition() {
+  const pt = seasonData?.phaseTransition;
+  if (!pt || pt.timestamp === lastTransitionTs) return;
+  lastTransitionTs = pt.timestamp;
+
+  const quote = PHASE_QUOTES[(pt.phase - 1) % PHASE_QUOTES.length];
+  const overlay = document.getElementById('phaseOverlay');
+  document.getElementById('poEmoji').textContent = pt.emoji || '🎯';
+  document.getElementById('poLabel').textContent = 'Phase ' + pt.phase + ' Begins';
+  document.getElementById('poName').textContent  = pt.name;
+  document.getElementById('poQuote').textContent = quote;
+  overlay.style.background = (pt.color || '#0a0a0b') + 'f0';
+  overlay.style.color = '#fff';
+  overlay.style.display = 'flex';
+  overlay.classList.remove('hiding');
+
+  setTimeout(() => {
+    overlay.classList.add('hiding');
+    setTimeout(() => { overlay.style.display = 'none'; }, 600);
+  }, 8000);
+}
+
+// ── Keyboard nav ──────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { nextSlide(); resetTimer(); }
+  if (e.key === 'ArrowLeft')  { prevSlide(); }
+  if (e.key === 'Escape')     {
+    document.getElementById('phaseOverlay').style.display = 'none';
+  }
+});
+</script>
+</body>
+</html>

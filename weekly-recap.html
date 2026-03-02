@@ -84,6 +84,10 @@ body{background:#ddd6c4;font-family:'Lora',Georgia,serif;color:#1a1008;}
 .strip-col .strip-body{font-size:10.5px;line-height:1.6;color:#4a3820;}
 
 .no-data{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9d876a;font-style:italic;text-align:center;padding:10px 0;}
+
+/* AI commentary */
+#aiCommentarySection .sect { border-bottom: 2px double #1a1008; }
+#aiCommentarySection { border: 1px solid #c8b88a; padding: 12px 14px; background: #fdf8ee; }
 </style>
 </head>
 <body>
@@ -91,6 +95,7 @@ body{background:#ddd6c4;font-family:'Lora',Georgia,serif;color:#1a1008;}
 <div class="control-bar no-print">
   <span class="ctrl-label">Week in Review</span>
   <span class="live"><span class="live-dot"></span>Live from Firebase</span>
+  <button class="print-btn" style="background:#1a1008;color:#f5a623;border:1px solid #f5a623;margin-right:8px" onclick="generateAICommentary()">✦ AI Commentary</button>
   <button class="print-btn" onclick="window.print()">🖨 Print Recap</button>
 </div>
 
@@ -158,6 +163,18 @@ body{background:#ddd6c4;font-family:'Lora',Georgia,serif;color:#1a1008;}
       <div id="sentimentReport"><div class="no-data">—</div></div>
     </div>
 
+  </div>
+
+  <!-- AI Commentary -->
+  <div id="aiCommentarySection" style="margin-bottom:14px;display:none">
+    <div class="sect">Market Analyst Commentary</div>
+    <div id="aiCommentaryBody" style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+      <div id="aiCol1" style="font-size:11.5px;line-height:1.8;color:#1a1008"></div>
+      <div id="aiCol2" style="font-size:11.5px;line-height:1.8;color:#1a1008"></div>
+    </div>
+    <div id="aiLoading" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9d876a;font-style:italic;text-align:center;padding:14px 0">
+      ⟳ Generating analyst commentary…
+    </div>
   </div>
 
   <!-- Bottom strip -->
@@ -334,6 +351,106 @@ function render() {
     if (note) document.getElementById('strip-note').textContent = note;
   });
 }
+// ═══════════════════════════════════════════════════════════
+// AI MARKET COMMENTARY
+// ═══════════════════════════════════════════════════════════
+async function generateAICommentary() {
+  const week    = seasonData.currentWeek || 1;
+  const phase   = GameEngine.getPhase(week);
+  const vol     = seasonData.volatility || 40;
+  const teams   = Object.entries(teamsData);
+
+  if (!teams.length) {
+    alert('No teams in the simulation yet.');
+    return;
+  }
+
+  const section = document.getElementById('aiCommentarySection');
+  const loading = document.getElementById('aiLoading');
+  const col1    = document.getElementById('aiCol1');
+  const col2    = document.getElementById('aiCol2');
+
+  section.style.display = 'block';
+  loading.style.display = 'block';
+  col1.textContent = '';
+  col2.textContent = '';
+
+  // Build market snapshot for the prompt
+  const sorted = teams.map(([id, t]) => ({
+    name:      t.brandName,
+    industry:  t.industry || '',
+    demo:      t.targetDemo || '',
+    members:   t.members || '',
+    score:     GameEngine.calcMarketScore(t.stats || {}),
+    stats:     t.stats || {},
+    rivalName: t.rivalId && teamsData[t.rivalId] ? teamsData[t.rivalId].brandName : null,
+    recentEvents: Object.values(t.eventLog || {})
+      .sort((a,b) => b.timestamp - a.timestamp)
+      .slice(0, 2)
+      .map(e => e.cardTitle)
+      .join(', ') || 'none',
+  })).sort((a,b) => b.score - a.score);
+
+  const marketSnapshot = sorted.map((t,i) =>
+    `#${i+1} ${t.name} (${t.industry}, targeting ${t.demo}): ` +
+    `Market Score ${t.score}, Budget ${t.stats.budget||0}, Demand ${t.stats.demand||0}, ` +
+    `Reputation ${t.stats.reputation||0}, Innovation ${t.stats.innovation||0}, ` +
+    `Risk ${t.stats.risk||0}, Sentiment ${t.stats.sentiment||50}` +
+    (t.rivalName ? `, Rival: ${t.rivalName}` : '') +
+    (t.recentEvents !== 'none' ? `, Recent events: ${t.recentEvents}` : '') +
+    (t.members ? `, Team: ${t.members}` : '')
+  ).join('
+');
+
+  const prompt = `You are a sharp, opinionated market analyst writing the commentary section of a weekly market report for a high school business simulation called BrandOps. Students are managing competing brands across industries.
+
+Current market conditions:
+- Week ${week} of 18
+- Phase: ${phase.name} (${phase.emoji})
+- Market Volatility: ${vol}/100 (${vol > 70 ? 'CHAOS' : vol > 40 ? 'Active' : 'Stable'})
+- Number of competing brands: ${sorted.length}
+
+Current standings and stats:
+${marketSnapshot}
+
+Write exactly two focused paragraphs of market analyst commentary (no headers, no bullet points, just prose). Each paragraph should be 4-6 sentences.
+
+Paragraph 1: Analyze the current competitive landscape — who is leading and why, what stat patterns explain the standings, any surprising moves or concerning trajectories. Be specific about brand names and numbers.
+
+Paragraph 2: Focus on the current phase (${phase.name}) and what it demands strategically. Identify which brands are best positioned, which are most at risk, and what the next two weeks likely hold. End with one sharp, specific observation that a real analyst would make.
+
+Write in the voice of a confident, slightly irreverent financial analyst — authoritative but not dry. Use the brand names and industry details naturally. Do not mention that this is a simulation or that the brands are fictional.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    const data = await response.json();
+    const text = data.content?.map(b => b.text || '').join('').trim();
+
+    if (!text) throw new Error('No content returned');
+
+    // Split into two paragraphs
+    const paras = text.split(/\n\n+/).filter(p => p.trim().length > 40);
+    loading.style.display = 'none';
+    col1.textContent = paras[0] || text;
+    col2.textContent = paras[1] || '';
+
+  } catch (err) {
+    loading.style.display = 'none';
+    col1.style.fontStyle = 'italic';
+    col1.style.color = '#9d876a';
+    col1.textContent = 'Commentary unavailable — check your connection and try again. (' + err.message + ')';
+  }
+}
+
 </script>
 </body>
 </html>
