@@ -524,6 +524,7 @@ textarea { resize: vertical; min-height: 60px; }
             <button class="btn small secondary" onclick="adjustWeek(-1)">← Previous Week</button>
             <span style="font-family:var(--mono);color:var(--amber);font-size:18px" id="seasonWeekDisplay">Week —</span>
             <button class="btn small success" onclick="advanceWeek()">Next Week →</button>
+            <button class="btn small secondary" onclick="testPhaseOverlay()" title="Fires the phase overlay on all open student pages right now">🎭 Test Overlay</button>
           </div>
         </div>
 
@@ -1096,6 +1097,10 @@ function advanceWeek() {
     }
     db.ref().update(updates).then(() => {
       showToast(`✓ Advanced to Week ${nextWeek}${phaseChanged ? ' — ' + nextPhase.emoji + ' ' + nextPhase.name + ' begins!' : ''}`);
+      // Auto-clear the phase transition flag after 12s so it doesn't replay on page reload
+      if (phaseChanged) {
+        setTimeout(() => db.ref('season/phaseTransition').remove(), 12000);
+      }
     });
   });
 }
@@ -1236,6 +1241,22 @@ const _origAddTeam = addTeam;
 // (Teacher side: write is done in advanceWeek; this clears the flag)
 function clearPhaseTransition() {
   db.ref('season/phaseTransition').remove();
+}
+
+function testPhaseOverlay() {
+  const week  = seasonData.currentWeek || 1;
+  const phase = GameEngine.getPhase(week);
+  const phaseIdx = GAME_CONFIG.phases.indexOf(phase) + 1;
+  db.ref('season/phaseTransition').set({
+    phase:     phaseIdx,
+    name:      phase.name,
+    emoji:     phase.emoji,
+    color:     phase.color,
+    timestamp: Date.now(),
+  }).then(() => {
+    showToast('🎭 Overlay fired — check student pages');
+    setTimeout(() => db.ref('season/phaseTransition').remove(), 12000);
+  });
 }
 
 function closeModal() {

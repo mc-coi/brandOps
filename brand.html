@@ -547,6 +547,63 @@ if (!TEAM_ID) {
       </div>`;
   }
 }
+
+// ── Phase Transition Overlay ──────────────────────────────────
+var _lastPhaseTransitionTimestamp = null;
+
+var PHASE_QUOTES = [
+  "Every brand starts as nothing. What you build in the next three weeks is everything.",
+  "The market has no mercy for brands that aren't ready. Show us what you're made of.",
+  "One hundred million people. Sixty seconds. What does your brand say to the entire world?",
+  "The best advertising is the kind audiences don't even realize they're watching.",
+  "The gloves are off. Go after them — or get gone.",
+  "Nothing lasts forever. Rebuild. Relaunch. Prove you deserve a second chapter.",
+];
+
+var _pageJustLoaded = true;
+setTimeout(function() { _pageJustLoaded = false; }, 3000);
+
+function checkPhaseTransition(season) {
+  var pt = season && season.phaseTransition;
+  if (!pt || !pt.timestamp) return;
+
+  // On first page load, silently consume any existing transition so we
+  // don't show an overlay for a phase change that already happened.
+  if (_lastPhaseTransitionTimestamp === null && _pageJustLoaded) {
+    _lastPhaseTransitionTimestamp = pt.timestamp;
+    return;
+  }
+
+  if (pt.timestamp === _lastPhaseTransitionTimestamp) return;
+  _lastPhaseTransitionTimestamp = pt.timestamp;
+
+  var quote = PHASE_QUOTES[(pt.phase - 1) % PHASE_QUOTES.length];
+  var overlay = document.getElementById('phaseOverlay');
+  if (!overlay) return;
+
+  document.getElementById('poEmoji').textContent = pt.emoji || '🎯';
+  document.getElementById('poLabel').textContent = 'Phase ' + pt.phase + ' Begins';
+  document.getElementById('poName').textContent  = pt.name;
+  document.getElementById('poQuote').textContent = quote;
+  overlay.style.background = (pt.color || '#1a1008') + 'ee';
+  overlay.style.color = '#fff';
+  overlay.style.display = 'flex';
+  overlay.style.flexDirection = 'column';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  overlay.classList.remove('hiding');
+
+  if (window._overlayTimer) clearTimeout(window._overlayTimer);
+  window._overlayTimer = setTimeout(dismissOverlay, 8000);
+}
+
+function dismissOverlay() {
+  var overlay = document.getElementById('phaseOverlay');
+  if (!overlay) return;
+  overlay.classList.add('hiding');
+  setTimeout(function() { overlay.style.display = 'none'; }, 500);
+}
+
 </script>
 
 <!-- Phase Transition Overlay -->
