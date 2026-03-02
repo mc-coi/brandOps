@@ -772,6 +772,8 @@ function refreshTeamUI() {
         </div>
         <div class="team-actions">
           <button class="btn small secondary" onclick="printNewspaper('${id}')">🗞️ Print</button>
+          <button class="btn small secondary" onclick="window.open('brand.html?team=${id}','_blank')">📱 Brand Page</button>
+          <button class="btn small secondary" onclick="copyBrandLink('${id}', '${team.brandName}')" title="Copy brand page link">🔗 Copy Link</button>
           <button class="btn small danger" onclick="confirmDeleteTeam('${id}', '${team.brandName}')">✕</button>
         </div>
       </div>`;
