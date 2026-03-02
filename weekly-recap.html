@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandOps — Weekly Recap</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=UnifrakturMaguntia&family=IBM+Plex+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#ddd6c4;font-family:'Lora',Georgia,serif;color:#1a1008;}
+@media print{
+  body{background:white;}
+  .no-print{display:none!important;}
+  .paper{box-shadow:none!important;margin:0!important;padding:24px 28px!important;}
+  @page{margin:.4in;size:letter;}
+}
+.control-bar{background:#1a1008;padding:10px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10;}
+.ctrl-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#c8a060;letter-spacing:.1em;text-transform:uppercase;}
+.print-btn{background:#f5a623;color:#000;border:none;padding:6px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;margin-left:auto;}
+.print-btn:hover{background:#d4891a;}
+.live{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#c8a060;}
+.live-dot{width:6px;height:6px;background:#22c55e;border-radius:50%;display:inline-block;animation:p 2s ease infinite;margin-right:4px;}
+@keyframes p{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+.paper{max-width:800px;margin:24px auto;background:#faf6ec;border:1px solid #c8b88a;box-shadow:0 6px 28px rgba(0,0,0,.22);padding:30px 36px;}
+
+/* masthead */
+.dateline{display:flex;justify-content:space-between;border-top:2px solid #1a1008;border-bottom:2px solid #1a1008;padding:4px 0;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#4a3820;margin-bottom:5px;}
+.masthead{font-family:'UnifrakturMaguntia',serif;font-size:58px;text-align:center;line-height:1;padding:8px 0 4px;}
+.masthead-rule{border:none;border-top:3px double #1a1008;margin:0 0 3px;}
+.masthead-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;text-align:center;color:#6b5a3a;border-bottom:1px solid #1a1008;padding-bottom:4px;margin-bottom:14px;}
+
+/* headline zone */
+.week-headline{font-family:'Playfair Display',serif;font-size:30px;font-weight:900;text-transform:uppercase;text-align:center;line-height:1.1;padding-bottom:8px;border-bottom:3px double #1a1008;margin-bottom:6px;}
+.week-deck{font-family:'Lora',serif;font-style:italic;font-size:12px;text-align:center;color:#4a3820;border-bottom:1px solid #c8b88a;padding-bottom:12px;margin-bottom:14px;}
+
+/* 3-col top stats */
+.top-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#1a1008;border:1px solid #1a1008;margin-bottom:14px;}
+.top-stat{background:#faf6ec;padding:10px;text-align:center;}
+.top-stat-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a3a;margin-bottom:4px;}
+.top-stat-val{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;}
+.top-stat-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#9d876a;margin-top:2px;}
+
+/* two-col body */
+.body-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:14px;}
+
+/* section titles */
+.sect{font-family:'Playfair Display',serif;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #1a1008;padding-bottom:4px;margin-bottom:8px;}
+
+/* leaderboard */
+.lb-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dotted #c8b88a;font-size:11px;}
+.lb-row:last-child{border:none;}
+.lb-rank{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9d876a;width:18px;}
+.lb-name{font-family:'Lora',serif;font-weight:600;}
+.lb-score{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;}
+.lb-change{font-family:'IBM Plex Mono',monospace;font-size:9px;}
+
+/* mover box */
+.mover-box{background:#1a1008;color:#f5a623;padding:10px 12px;margin-bottom:10px;}
+.mover-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#c8a060;margin-bottom:3px;}
+.mover-name{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;}
+.mover-detail{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#c8a060;margin-top:2px;}
+
+/* events this week */
+.event-item{padding:5px 0;border-bottom:1px dotted #c8b88a;font-size:11px;line-height:1.4;}
+.event-item:last-child{border:none;}
+.event-brand{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6b5a3a;letter-spacing:.06em;text-transform:uppercase;}
+.event-title{font-family:'Lora',serif;font-weight:600;}
+
+/* stat movers */
+.stat-move{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dotted #c8b88a;font-size:11px;}
+.stat-move:last-child{border:none;}
+.stat-move-up{color:#166534;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;}
+.stat-move-dn{color:#991b1b;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;}
+
+/* phase forecast */
+.forecast{font-size:11.5px;line-height:1.7;color:#1a1008;}
+
+/* bottom strip */
+.bottom-strip{border-top:3px double #1a1008;padding-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.strip-col .strip-title{font-family:'Playfair Display',serif;font-size:11px;font-weight:900;text-transform:uppercase;border-bottom:1px solid #1a1008;padding-bottom:3px;margin-bottom:5px;}
+.strip-col .strip-body{font-size:10.5px;line-height:1.6;color:#4a3820;}
+
+.no-data{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9d876a;font-style:italic;text-align:center;padding:10px 0;}
+</style>
+</head>
+<body>
+
+<div class="control-bar no-print">
+  <span class="ctrl-label">Week in Review</span>
+  <span class="live"><span class="live-dot"></span>Live from Firebase</span>
+  <button class="print-btn" onclick="window.print()">🖨 Print Recap</button>
+</div>
+
+<div class="paper">
+  <div class="dateline">
+    <span id="nlDate">—</span>
+    <span>Teacher Edition · Weekly Recap</span>
+    <span id="nlWeekLabel">—</span>
+  </div>
+  <div class="masthead">The Brand Bulletin</div>
+  <hr class="masthead-rule">
+  <div class="masthead-sub">BrandOps Simulator &nbsp;·&nbsp; Week in Review &nbsp;·&nbsp; Official Record</div>
+
+  <div class="week-headline" id="mainHeadline">Loading market data…</div>
+  <div class="week-deck" id="mainDeck">—</div>
+
+  <!-- Top stats bar -->
+  <div class="top-stats">
+    <div class="top-stat">
+      <div class="top-stat-label">Current Week</div>
+      <div class="top-stat-val" id="statWeek">—</div>
+      <div class="top-stat-sub" id="statPhase">—</div>
+    </div>
+    <div class="top-stat">
+      <div class="top-stat-label">Market Volatility</div>
+      <div class="top-stat-val" id="statVol">—</div>
+      <div class="top-stat-sub" id="statVolDesc">—</div>
+    </div>
+    <div class="top-stat">
+      <div class="top-stat-label">Active Teams</div>
+      <div class="top-stat-val" id="statTeams">—</div>
+      <div class="top-stat-sub">in the market</div>
+    </div>
+  </div>
+
+  <div class="body-cols">
+
+    <!-- LEFT -->
+    <div>
+      <!-- Top mover -->
+      <div class="sect">This Week's Top Mover</div>
+      <div id="topMoverBox"><div class="no-data">No data yet.</div></div>
+
+      <!-- Leaderboard -->
+      <div class="sect" style="margin-top:12px">Market Standings</div>
+      <div id="leaderboard"><div class="no-data">No teams yet.</div></div>
+
+      <!-- Phase forecast -->
+      <div class="sect" style="margin-top:12px">Phase Outlook</div>
+      <div class="forecast" id="phaseOutlook">—</div>
+    </div>
+
+    <!-- RIGHT -->
+    <div>
+      <!-- Events this week -->
+      <div class="sect">Events This Week</div>
+      <div id="eventsThisWeek"><div class="no-data">No active events.</div></div>
+
+      <!-- Biggest stat moves -->
+      <div class="sect" style="margin-top:12px">Biggest Stat Swings</div>
+      <div id="statSwings"><div class="no-data">—</div></div>
+
+      <!-- Sentiment leaders -->
+      <div class="sect" style="margin-top:12px">Public Sentiment Report</div>
+      <div id="sentimentReport"><div class="no-data">—</div></div>
+    </div>
+
+  </div>
+
+  <!-- Bottom strip -->
+  <div class="bottom-strip" id="bottomStrip">
+    <div class="strip-col">
+      <div class="strip-title">Market Leader</div>
+      <div class="strip-body" id="strip-leader">—</div>
+    </div>
+    <div class="strip-col">
+      <div class="strip-title">Most Improved</div>
+      <div class="strip-body" id="strip-improved">—</div>
+    </div>
+    <div class="strip-col">
+      <div class="strip-title">At Risk</div>
+      <div class="strip-body" id="strip-risk">—</div>
+    </div>
+    <div class="strip-col">
+      <div class="strip-title">Teacher's Note</div>
+      <div class="strip-body" id="strip-note">No note this week.</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/game-engine.js"></script>
+<script src="js/event-cards.js"></script>
+<script>
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.database();
+let seasonData = {}, teamsData = {};
+
+db.ref('season').on('value',  s => { seasonData = s.val() || {}; render(); });
+db.ref('teams').on('value',   s => { teamsData  = s.val() || {}; render(); });
+
+const PHASE_OUTLOOKS = {
+  "Brand Launch":        "Teams are still establishing their identities. Expect wide variation in Market Scores as some brands launch cleanly and others struggle with focus. The brands that defined their target demographic clearly in Week 1 should be pulling ahead. Volatility is manageable — use this relative calm to build equity before Phase 2 arrives.",
+  "Market Pressure":     "The simulation gets real this week. Event cards are hitting harder and the gap between prepared and unprepared brands is widening. Watch for Risk scores climbing — any team above 60 Risk is one bad event from a crisis. The best brands will use this phase to build a crisis communications playbook, not just react to one.",
+  "Super Bowl Campaign": "This is the highest-stakes creative phase of the semester. Production quality and storytelling depth will drive the biggest single-deliverable stat swings of the season. Teams should be building toward their 15-second cutdown as a distinct creative challenge — compression is a skill, not just editing.",
+  "Product Placement":   "The quiet phase. Sentiment scores become the differentiator here — brands that integrated naturally will see public goodwill climb while forced placements get punished. Watch the gap between Reputation and Sentiment: a brand can have high reputation and low sentiment, and that tension is the lesson.",
+  "Market War":          "Final standings are taking shape and teams within striking distance of the lead are making their moves. Comparative and satirical campaigns are live in the market. Risk scores from aggressive attacks will determine who survives Phase 6 intact.",
+  "Rebrand or Die":      "The terminal events have fired. Every brand is now in transformation mode. The Investor Pitch Deck is the final opportunity for a major stat swing — teams that have been building a coherent brand story all semester will have the most compelling pitch. Final Market Scores lock at the end of Week 18.",
+};
+
+function render() {
+  const week   = seasonData.currentWeek || 1;
+  const vol    = seasonData.volatility  || 40;
+  const phase  = GameEngine.getPhase(week);
+  const teams  = Object.entries(teamsData);
+  const now    = new Date();
+
+  document.getElementById('nlDate').textContent      = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('nlWeekLabel').textContent = 'Week ' + week + ' · Vol ' + vol;
+  document.getElementById('statWeek').textContent    = week;
+  document.getElementById('statPhase').textContent   = phase.emoji + ' ' + phase.name;
+  document.getElementById('statVol').textContent     = vol;
+  document.getElementById('statVolDesc').textContent = vol <= 30 ? 'Stable' : vol <= 70 ? 'Active' : 'CHAOS';
+  document.getElementById('statTeams').textContent   = teams.length;
+
+  if (!teams.length) {
+    document.getElementById('mainHeadline').textContent = 'Awaiting Market Participants';
+    document.getElementById('mainDeck').textContent = 'No teams have entered the simulation yet.';
+    return;
+  }
+
+  const sorted = teams.map(([id, t]) => ({
+    id, ...t,
+    score: GameEngine.calcMarketScore(t.stats || {}),
+    sentiment: t.stats?.sentiment || 50,
+  })).sort((a,b) => b.score - a.score);
+
+  const leader = sorted[0];
+  const laggard = sorted[sorted.length - 1];
+
+  // Headline based on week/phase
+  const headlines = {
+    "Brand Launch":        `${leader.brandName} LEADS EARLY MARKET — ${teams.length} BRANDS COMPETE FOR POSITION`,
+    "Market Pressure":     `CRISES SEPARATE THE STRONG FROM THE STRUGGLING — ${leader.brandName} HOLDS THE TOP`,
+    "Super Bowl Campaign": `ALL EYES ON THE BIG GAME — WHO HAS THE CAMPAIGN OF THE SEASON?`,
+    "Product Placement":   `SENTIMENT SCORES DIVERGE AS PLACEMENT QUALITY VARIES ACROSS THE MARKET`,
+    "Market War":          `MARKET WAR HEATS UP — ${leader.brandName} DEFENDS ITS POSITION`,
+    "Rebrand or Die":      `THE FINAL TRANSFORMATION — EVERY BRAND FIGHTS FOR ITS FUTURE`,
+  };
+  document.getElementById('mainHeadline').textContent = headlines[phase.name] || 'WEEK ' + week + ' MARKET REPORT';
+  document.getElementById('mainDeck').textContent = `${phase.emoji} ${phase.name} · ${teams.length} active brands · Market Volatility: ${vol}/100`;
+
+  // Leaderboard
+  document.getElementById('leaderboard').innerHTML = sorted.map((t,i) => {
+    const trend = GameEngine.stockTrend(t.stockHistory || []);
+    const stock = (t.stockHistory||[]).length ? GameEngine.formatDollar(t.stockHistory[t.stockHistory.length-1]) : '—';
+    return `<div class="lb-row">
+      <span class="lb-rank">${i+1}</span>
+      <span class="lb-name">${t.brandName}</span>
+      <span>
+        <span class="lb-score">${t.score}</span>
+        <span class="lb-change" style="color:${trend.color};margin-left:6px">${stock} ${trend.arrow}</span>
+      </span>
+    </div>`;
+  }).join('');
+
+  // Top mover (highest score)
+  document.getElementById('topMoverBox').innerHTML = `
+    <div class="mover-box">
+      <div class="mover-label">↑ Market Leader This Week</div>
+      <div class="mover-name">${leader.brandName}</div>
+      <div class="mover-detail">Market Score: ${leader.score} · ${leader.industry||''} · ${leader.targetDemo||''}</div>
+    </div>`;
+
+  // Events
+  const activeCards = seasonData.activeCards || {};
+  const eventEntries = Object.entries(activeCards);
+  document.getElementById('eventsThisWeek').innerHTML = eventEntries.length
+    ? eventEntries.map(([tid, cd]) => {
+        const t    = teamsData[tid];
+        const card = CardLibrary.getById(cd.cardId);
+        if (!t || !card) return '';
+        return `<div class="event-item">
+          <div class="event-brand">${t.brandName}</div>
+          <div class="event-title">${card.title}</div>
+          <div style="font-size:10px;color:#6b5a3a">${card.storyText.substring(0,80)}…</div>
+        </div>`;
+      }).join('')
+    : '<div class="no-data">No active events this week.</div>';
+
+  // Stat swings — find biggest demand change from score log
+  const swings = sorted.map(t => {
+    const log = Object.values(t.scoreLog || {}).filter(e => e.week === week);
+    const pts = log.reduce((sum,e) => sum + (e.points||0), 0);
+    return { name: t.brandName, pts };
+  }).filter(t => t.pts > 0).sort((a,b) => b.pts - a.pts);
+
+  document.getElementById('statSwings').innerHTML = swings.length
+    ? swings.slice(0,5).map(t =>
+        `<div class="stat-move">
+          <span>${t.name}</span>
+          <span class="stat-move-up">+${t.pts} pts this week</span>
+        </div>`
+      ).join('')
+    : '<div class="no-data">No deliverables scored this week.</div>';
+
+  // Sentiment report
+  const sentSorted = [...sorted].sort((a,b) => b.sentiment - a.sentiment);
+  document.getElementById('sentimentReport').innerHTML = sentSorted.map((t,i) => {
+    const color = GameEngine.statColor('sentiment', t.sentiment);
+    const label = t.sentiment >= 70 ? 'Beloved' : t.sentiment >= 50 ? 'Positive' : t.sentiment >= 35 ? 'Mixed' : 'Hostile';
+    return `<div class="stat-move">
+      <span>${i+1}. ${t.brandName}</span>
+      <span style="color:${color};font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600">${t.sentiment} — ${label}</span>
+    </div>`;
+  }).join('');
+
+  // Phase outlook
+  document.getElementById('phaseOutlook').textContent = PHASE_OUTLOOKS[phase.name] || '';
+
+  // Bottom strip
+  document.getElementById('strip-leader').textContent =
+    `${leader.brandName} holds the top position with a Market Score of ${leader.score}. ` +
+    `${leader.industry||''} · ${leader.targetDemo||''}.`;
+
+  const biggest = [...sorted].sort((a,b) =>
+    (b.stockHistory?.length||0) - (a.stockHistory?.length||0))[0];
+  const improved = sorted[Math.floor(sorted.length * 0.4)] || sorted[0];
+  document.getElementById('strip-improved').textContent =
+    `Watch ${improved.brandName} — their trajectory this phase suggests a potential move up the leaderboard before the week closes.`;
+
+  const atRisk = sorted.filter(t => (t.stats?.risk||0) > 55 || (t.stats?.sentiment||50) < 30);
+  document.getElementById('strip-risk').textContent = atRisk.length
+    ? atRisk.map(t => `${t.brandName} (Risk: ${t.stats?.risk||0}, Sentiment: ${t.stats?.sentiment||50})`).join('; ')
+    : 'No brands in critical condition this week.';
+
+  // Teacher note from Firebase
+  db.ref('season/weeklyNote').once('value', snap => {
+    const note = snap.val();
+    if (note) document.getElementById('strip-note').textContent = note;
+  });
+}
+</script>
+</body>
+</html>

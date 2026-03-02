@@ -305,6 +305,8 @@ textarea { resize: vertical; min-height: 60px; }
       &nbsp;|&nbsp;
       <a href="market-dispatch.html" target="_blank" style="color:var(--amber);text-decoration:none">↗ Market Dispatch</a>
       &nbsp;|&nbsp;
+      <a href="weekly-recap.html" target="_blank" style="color:var(--amber);text-decoration:none">↗ Weekly Recap</a>
+      &nbsp;|&nbsp;
       <a href="index.html" target="_blank" style="color:var(--amber);text-decoration:none">↗ Student View</a>
     </div>
   </div>
@@ -316,6 +318,9 @@ textarea { resize: vertical; min-height: 60px; }
       <div class="nav-item" data-panel="teams">👥 Teams</div>
       <div class="nav-item" data-panel="events">🎲 Events</div>
       <div class="nav-item" data-panel="scoring">📋 Score Work</div>
+      <div class="nav-item" data-panel="rivals">⚔️ Rivals</div>
+      <div class="nav-item" data-panel="journal">📓 Journal</div>
+      <div class="nav-item" data-panel="letters">📬 Letters</div>
       <div class="nav-item" data-panel="season">⚙️ Season</div>
     </nav>
 
@@ -530,9 +535,104 @@ textarea { resize: vertical; min-height: 60px; }
           <button class="btn small" style="width:auto" onclick="saveOverrideStats()">Save Stat Changes</button>
         </div>
 
+        <div class="card">
+          <div class="card-title">Weekly Note (appears on Recap printout)</div>
+          <textarea id="weeklyNoteInput" style="min-height:60px" placeholder="Optional note for this week — shown in the bottom strip of the Weekly Recap…"></textarea>
+          <button class="btn small" style="width:auto;margin-top:4px" onclick="saveWeeklyNote()">Save Note</button>
+        </div>
+
         <div class="card" style="border-color:rgba(239,68,68,0.3)">
           <div class="card-title" style="color:var(--red)">Danger Zone</div>
           <button class="btn danger small" onclick="confirmResetSeason()">⚠ Reset Entire Season</button>
+        </div>
+      </div>
+
+
+      <!-- ══ RIVALS PANEL ══════════════════════════════════════ -->
+      <div class="panel" id="panel-rivals">
+        <div class="panel-title">Rivals</div>
+        <div class="panel-sub">Designate brand rivalries — event effects are amplified between rivals</div>
+        <div class="card">
+          <div class="card-title">Set Rivalry</div>
+          <div class="grid-2">
+            <div>
+              <label>Brand A</label>
+              <select id="rivalA"><option value="">— Choose brand —</option></select>
+            </div>
+            <div>
+              <label>Brand B (their rival)</label>
+              <select id="rivalB"><option value="">— Choose brand —</option></select>
+            </div>
+          </div>
+          <button class="btn small success" onclick="setRivalry()" style="margin-top:4px">⚔️ Set as Rivals</button>
+          <button class="btn small secondary" onclick="clearRivalry()" style="margin-top:4px;margin-left:8px">✕ Clear Rivalry</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Active Rivalries</div>
+          <div id="rivalList"><div style="font-family:var(--mono);font-size:12px;color:var(--muted)">No rivalries set.</div></div>
+        </div>
+      </div>
+
+      <!-- ══ JOURNAL PANEL ══════════════════════════════════════ -->
+      <div class="panel" id="panel-journal">
+        <div class="panel-title">Brand Journal</div>
+        <div class="panel-sub">Add and manage weekly journal entries per team</div>
+        <div class="card">
+          <div class="card-title">Add Journal Entry</div>
+          <div class="grid-2">
+            <div>
+              <label>Team</label>
+              <select id="journalTeamSelect"><option value="">— Choose team —</option></select>
+            </div>
+            <div>
+              <label>Week</label>
+              <select id="journalWeekSelect">
+                <option value="">— Week —</option>
+              </select>
+            </div>
+          </div>
+          <div id="journalPromptDisplay" style="font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--bg3);padding:10px;margin-bottom:10px;line-height:1.6;font-style:italic;display:none"></div>
+          <label>Team's Response</label>
+          <textarea id="journalText" style="min-height:100px" placeholder="Type or paste the team's journal entry here…"></textarea>
+          <button class="btn small success" onclick="saveJournalEntry()">💾 Save Entry</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Recent Entries</div>
+          <div id="journalRecentList"><div style="font-family:var(--mono);font-size:12px;color:var(--muted)">No entries yet.</div></div>
+        </div>
+      </div>
+
+      <!-- ══ SHAREHOLDER LETTERS PANEL ══════════════════════════ -->
+      <div class="panel" id="panel-letters">
+        <div class="panel-title">Shareholder Letters</div>
+        <div class="panel-sub">Record end-of-phase CEO letters per team</div>
+        <div class="card">
+          <div class="card-title">Add Letter</div>
+          <div class="grid-2">
+            <div>
+              <label>Team</label>
+              <select id="letterTeamSelect"><option value="">— Choose team —</option></select>
+            </div>
+            <div>
+              <label>Phase</label>
+              <select id="letterPhaseSelect">
+                <option value="1">Phase 1 — Brand Launch</option>
+                <option value="2">Phase 2 — Market Pressure</option>
+                <option value="3">Phase 3 — Super Bowl Campaign</option>
+                <option value="4">Phase 4 — Product Placement</option>
+                <option value="5">Phase 5 — Market War</option>
+                <option value="6">Phase 6 — Rebrand or Die</option>
+              </select>
+            </div>
+          </div>
+          <div id="letterPromptDisplay" style="font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--bg3);padding:10px;margin-bottom:10px;line-height:1.6;font-style:italic"></div>
+          <label>Letter Text</label>
+          <textarea id="letterText" style="min-height:130px" placeholder="Type or paste the team's shareholder letter here…"></textarea>
+          <button class="btn small success" onclick="saveShareholderLetter()">💾 Save Letter</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Saved Letters</div>
+          <div id="letterList"><div style="font-family:var(--mono);font-size:12px;color:var(--muted)">No letters yet.</div></div>
         </div>
       </div>
 
@@ -1008,7 +1108,7 @@ function loadOverrideStats() {
   if (!teamId) { container.innerHTML = ''; return; }
 
   const stats = teamsData[teamId]?.stats || {};
-  const fields = ['budget','demand','reputation','innovation','risk'];
+  const fields = ['budget','demand','reputation','innovation','risk','sentiment'];
   container.innerHTML = `<div class="grid-3" style="margin-bottom:12px">
     ${fields.map(s => `
       <div>
@@ -1022,7 +1122,7 @@ function saveOverrideStats() {
   const teamId = document.getElementById('overrideTeam').value;
   if (!teamId) { showToast('Select a team.', true); return; }
 
-  const fields = ['budget','demand','reputation','innovation','risk'];
+  const fields = ['budget','demand','reputation','innovation','risk','sentiment'];
   const stats  = {};
   fields.forEach(s => {
     stats[s] = parseInt(document.getElementById(`override_${s}`)?.value || 50);
@@ -1081,6 +1181,189 @@ function openModal(title, body, onConfirm) {
 function closeModal() {
   document.getElementById('confirmModal').classList.remove('open');
 }
+// ═══════════════════════════════════════════════════════════
+// RIVALS
+// ═══════════════════════════════════════════════════════════
+function setRivalry() {
+  var a = document.getElementById('rivalA').value;
+  var b = document.getElementById('rivalB').value;
+  if (!a || !b || a === b) { showToast('Select two different teams.', true); return; }
+  var updates = {};
+  updates['teams/' + a + '/rivalId'] = b;
+  updates['teams/' + b + '/rivalId'] = a;
+  db.ref().update(updates).then(function() {
+    showToast('⚔️ Rivalry set: ' + (teamsData[a].brandName) + ' vs ' + (teamsData[b].brandName));
+  });
+}
+
+function clearRivalry() {
+  var a = document.getElementById('rivalA').value;
+  if (!a) { showToast('Select a team to clear.', true); return; }
+  var rivalId = teamsData[a] && teamsData[a].rivalId;
+  var updates = {};
+  updates['teams/' + a + '/rivalId'] = null;
+  if (rivalId) updates['teams/' + rivalId + '/rivalId'] = null;
+  db.ref().update(updates).then(function() { showToast('Rivalry cleared.'); });
+}
+
+function renderRivalList() {
+  var el = document.getElementById('rivalList');
+  if (!el) return;
+  var pairs = [];
+  var seen = {};
+  Object.entries(teamsData).forEach(function(entry) {
+    var id = entry[0]; var t = entry[1];
+    if (t.rivalId && teamsData[t.rivalId] && !seen[t.rivalId + id]) {
+      pairs.push({ a: t.brandName, b: teamsData[t.rivalId].brandName });
+      seen[id + t.rivalId] = true;
+    }
+  });
+  el.innerHTML = pairs.length
+    ? pairs.map(function(p) {
+        return '<div style="font-family:var(--mono);font-size:12px;padding:8px 0;border-bottom:1px solid var(--border)">⚔️ ' + p.a + ' <span style="color:var(--muted)">vs</span> ' + p.b + '</div>';
+      }).join('')
+    : '<div style="font-family:var(--mono);font-size:12px;color:var(--muted)">No rivalries set yet.</div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// JOURNAL
+// ═══════════════════════════════════════════════════════════
+function populateJournalWeeks() {
+  var sel = document.getElementById('journalWeekSelect');
+  sel.innerHTML = '<option value="">— Week —</option>';
+  for (var i = 1; i <= 18; i++) {
+    var phase = GameEngine.getPhase(i);
+    sel.innerHTML += '<option value="' + i + '">Week ' + i + ' — ' + phase.name + '</option>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  populateJournalWeeks();
+  document.getElementById('journalWeekSelect').addEventListener('change', showJournalPrompt);
+  document.getElementById('letterPhaseSelect').addEventListener('change', showLetterPrompt);
+});
+
+function showJournalPrompt() {
+  var week = parseInt(document.getElementById('journalWeekSelect').value);
+  var el = document.getElementById('journalPromptDisplay');
+  if (!week) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.textContent = 'Prompt: ' + (JOURNAL_PROMPTS[week] || 'Open reflection.');
+}
+
+function showLetterPrompt() {
+  var phase = parseInt(document.getElementById('letterPhaseSelect').value);
+  var el = document.getElementById('letterPromptDisplay');
+  var found = SHAREHOLDER_LETTER_PROMPTS.find(function(p) { return p.phase === phase; });
+  el.textContent = found ? 'Prompt: ' + found.prompt : '';
+}
+
+function saveJournalEntry() {
+  var teamId = document.getElementById('journalTeamSelect').value;
+  var week   = parseInt(document.getElementById('journalWeekSelect').value);
+  var text   = document.getElementById('journalText').value.trim();
+  if (!teamId || !week || !text) { showToast('Fill in all fields.', true); return; }
+  db.ref('teams/' + teamId + '/journalEntries/' + week).set({
+    week: week, text: text, timestamp: Date.now()
+  }).then(function() {
+    showToast('✓ Journal entry saved for Week ' + week);
+    document.getElementById('journalText').value = '';
+    renderJournalList();
+  });
+}
+
+function renderJournalList() {
+  var el = document.getElementById('journalRecentList');
+  if (!el) return;
+  var allEntries = [];
+  Object.entries(teamsData).forEach(function(te) {
+    var tid = te[0]; var team = te[1];
+    Object.values(team.journalEntries || {}).forEach(function(e) {
+      allEntries.push({ teamName: team.brandName, week: e.week, text: e.text });
+    });
+  });
+  allEntries.sort(function(a,b) { return b.week - a.week; });
+  el.innerHTML = allEntries.slice(0, 8).map(function(e) {
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Week ' + e.week + ' · ' + e.teamName + '</div>' +
+      '<div style="font-size:12px;color:var(--text2);margin-top:3px;line-height:1.5">' + (e.text||'').substring(0,120) + (e.text.length > 120 ? '…' : '') + '</div>' +
+    '</div>';
+  }).join('') || '<div style="font-family:var(--mono);font-size:12px;color:var(--muted)">No entries yet.</div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHAREHOLDER LETTERS
+// ═══════════════════════════════════════════════════════════
+function saveShareholderLetter() {
+  var teamId = document.getElementById('letterTeamSelect').value;
+  var phase  = parseInt(document.getElementById('letterPhaseSelect').value);
+  var text   = document.getElementById('letterText').value.trim();
+  if (!teamId || !phase || !text) { showToast('Fill in all fields.', true); return; }
+  db.ref('teams/' + teamId + '/shareholderLetters/' + phase).set({
+    phase: phase, text: text, timestamp: Date.now()
+  }).then(function() {
+    showToast('✓ Shareholder letter saved for Phase ' + phase);
+    document.getElementById('letterText').value = '';
+    renderLetterList();
+  });
+}
+
+function renderLetterList() {
+  var el = document.getElementById('letterList');
+  if (!el) return;
+  var letters = [];
+  Object.entries(teamsData).forEach(function(te) {
+    var teamName = te[1].brandName;
+    Object.values(te[1].shareholderLetters || {}).forEach(function(l) {
+      letters.push({ teamName: teamName, phase: l.phase, text: l.text });
+    });
+  });
+  letters.sort(function(a,b) { return a.phase - b.phase; });
+  el.innerHTML = letters.length
+    ? letters.map(function(l) {
+        return '<div style="padding:8px 0;border-bottom:1px solid var(--border)">' +
+          '<div style="font-family:var(--mono);font-size:10px;color:var(--purple)">Phase ' + l.phase + ' · ' + l.teamName + '</div>' +
+          '<div style="font-size:12px;color:var(--text2);margin-top:3px;line-height:1.5">' + (l.text||'').substring(0,120) + (l.text.length > 120 ? '…' : '') + '</div>' +
+        '</div>';
+      }).join('')
+    : '<div style="font-family:var(--mono);font-size:12px;color:var(--muted)">No letters yet.</div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// WEEKLY NOTE (for recap bottom strip)
+// ═══════════════════════════════════════════════════════════
+function saveWeeklyNote() {
+  var note = document.getElementById('weeklyNoteInput').value.trim();
+  db.ref('season/weeklyNote').set(note || null).then(function() {
+    showToast('Weekly note saved.');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// HOOK NEW PANELS INTO refreshTeamSelects
+// ═══════════════════════════════════════════════════════════
+var _origRefreshTeamSelects = refreshTeamSelects;
+refreshTeamSelects = function() {
+  _origRefreshTeamSelects();
+  var teams = Object.entries(teamsData);
+  var opts = '<option value="">— Choose a team —</option>' +
+    teams.map(function(e) { return '<option value="' + e[0] + '">' + (e[1].brandName||'?') + '</option>'; }).join('');
+  ['rivalA','rivalB','journalTeamSelect','letterTeamSelect'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = opts.replace('— Choose a team —', id.startsWith('rival') ? '— Choose brand —' : '— Choose a team —');
+  });
+  renderRivalList();
+  renderJournalList();
+  renderLetterList();
+};
+
+// ═══════════════════════════════════════════════════════════
+// SENTIMENT — add to season panel via override stat
+// (Sentiment is applied through event cards and manually here)
+// ═══════════════════════════════════════════════════════════
+// Sentiment is included automatically in the stat override fields
+// since it's now part of the stats object in each team.
+
 </script>
 </body>
 </html>

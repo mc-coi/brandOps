@@ -597,5 +597,13 @@ const CardLibrary = {
   },
   getAllDecks() {
     return ["economic", "social", "innovation", "wildcard"];
+  },
+  // Returns all cards that affect sentiment (for teacher reference)
+  getSentimentCards() {
+    return EVENT_CARDS.filter(c =>
+      c.effects?.sentiment ||
+      c.choiceA?.effects?.sentiment ||
+      c.choiceB?.effects?.sentiment
+    );
   }
 };

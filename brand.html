@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandOps — Brand Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+:root {
+  --bg:#0a0a0b; --bg2:#111117; --bg3:#18181f; --bg4:#1e1e28;
+  --border:#2a2a38; --border2:#333345;
+  --amber:#f5a623; --amber2:#d4891a;
+  --green:#22c55e; --red:#ef4444; --yellow:#eab308;
+  --blue:#3b82f6; --purple:#a855f7; --teal:#14b8a6;
+  --muted:#6b7280; --text:#e8e3d8; --text2:#9d97a0;
+  --serif:'Playfair Display',serif;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
+
+/* ── Top bar ── */
+.top-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:stretch;justify-content:space-between;height:52px;}
+.brand-id{display:flex;align-items:center;gap:14px;}
+.brand-name-top{font-family:var(--serif);font-size:22px;font-weight:900;}
+.brand-tag{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;}
+.top-right{display:flex;align-items:center;gap:16px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;animation:pulse 2s ease infinite;margin-right:5px;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ── Rival banner ── */
+.rival-banner{background:linear-gradient(90deg,#1a0505,#0d0d1a);border-bottom:1px solid rgba(239,68,68,.3);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;display:none;}
+.rival-banner.show{display:flex;}
+.rival-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--red);}
+.rival-name{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--red);}
+.rival-warning{font-family:var(--mono);font-size:10px;color:rgba(239,68,68,.7);}
+
+/* ── Layout ── */
+.page{display:grid;grid-template-columns:1fr 340px;gap:0;min-height:calc(100vh - 52px);}
+.main{padding:24px;border-right:1px solid var(--border);overflow-y:auto;}
+.sidebar{padding:20px;overflow-y:auto;background:var(--bg2);}
+
+/* ── Cards ── */
+.card{background:var(--bg3);border:1px solid var(--border);padding:18px;margin-bottom:16px;}
+.card-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;}
+
+/* ── Stat grid ── */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;}
+.stat-tile{background:var(--bg4);border:1px solid var(--border);padding:14px 12px;}
+.stat-tile-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.stat-tile-val{font-family:var(--serif);font-size:32px;font-weight:900;line-height:1;}
+.stat-tile-bar{height:4px;background:var(--bg);margin-top:8px;border-radius:2px;overflow:hidden;}
+.stat-tile-fill{height:100%;border-radius:2px;transition:width .6s ease;}
+.stat-tile.sentiment{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center;}
+.sentiment-meter{position:relative;height:16px;background:linear-gradient(90deg,var(--red),var(--yellow),var(--green));border-radius:8px;overflow:visible;margin-top:8px;}
+.sentiment-needle{position:absolute;top:-4px;width:4px;height:24px;background:white;border-radius:2px;transform:translateX(-50%);transition:left .6s ease;box-shadow:0 0 6px rgba(255,255,255,.5);}
+
+/* ── Score tile ── */
+.score-hero{background:var(--bg4);border:1px solid var(--border);padding:16px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;}
+.score-block{text-align:center;padding:0 12px;}
+.score-block+.score-block{border-left:1px solid var(--border);}
+.score-block-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.score-block-val{font-family:var(--serif);font-size:28px;font-weight:900;}
+
+/* ── Stock sparkline ── */
+.sparkline-wrap{margin-top:8px;}
+.stock-meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.stock-price{font-family:var(--mono);font-size:20px;font-weight:600;}
+.stock-change{font-family:var(--mono);font-size:12px;}
+
+/* ── Phase tracker ── */
+.phase-track{display:flex;gap:4px;margin-bottom:16px;}
+.phase-pip{flex:1;height:6px;border-radius:3px;background:var(--bg4);}
+.phase-pip.done{background:var(--amber);}
+.phase-pip.current{background:var(--amber);opacity:.5;animation:pipPulse 1.5s ease infinite;}
+@keyframes pipPulse{0%,100%{opacity:.5;}50%{opacity:1;}}
+.phase-label{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;}
+
+/* ── Event log ── */
+.event-entry{padding:10px 0;border-bottom:1px solid var(--border);}
+.event-entry:last-child{border:none;}
+.event-meta{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.06em;margin-bottom:3px;}
+.event-title-row{font-family:var(--sans);font-size:13px;font-weight:600;margin-bottom:4px;}
+.event-effects-row{display:flex;gap:6px;flex-wrap:wrap;}
+.effect-pill{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:2px;}
+.effect-pill.pos{background:rgba(34,197,94,.15);color:var(--green);}
+.effect-pill.neg{background:rgba(239,68,68,.15);color:var(--red);}
+.event-choice{font-family:var(--mono);font-size:10px;color:var(--amber);margin-top:3px;}
+
+/* ── Journal ── */
+.journal-entry{background:var(--bg4);border-left:3px solid var(--amber);padding:12px;margin-bottom:10px;}
+.journal-week{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+.journal-prompt{font-family:var(--sans);font-size:12px;color:var(--muted);font-style:italic;margin-bottom:8px;line-height:1.5;}
+.journal-text{font-family:var(--sans);font-size:13px;line-height:1.6;color:var(--text2);}
+.journal-empty{font-family:var(--mono);font-size:11px;color:var(--muted);font-style:italic;text-align:center;padding:12px 0;}
+
+/* ── Shareholder Letters ── */
+.letter-entry{background:var(--bg4);border:1px solid var(--border);border-left:3px solid var(--purple);padding:14px;margin-bottom:10px;}
+.letter-phase{font-family:var(--mono);font-size:9px;color:var(--purple);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+.letter-prompt{font-family:var(--sans);font-size:11px;color:var(--muted);font-style:italic;margin-bottom:8px;line-height:1.5;}
+.letter-body{font-family:var(--sans);font-size:13px;line-height:1.7;color:var(--text2);white-space:pre-wrap;}
+
+/* ── Score log ── */
+.score-entry{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;}
+.score-entry:last-child{border:none;}
+.score-badge{padding:2px 8px;font-size:10px;font-weight:600;}
+.score-badge.s1{background:rgba(239,68,68,.2);color:var(--red);}
+.score-badge.s3{background:rgba(234,179,8,.2);color:var(--yellow);}
+.score-badge.s5{background:rgba(34,197,94,.2);color:var(--green);}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.tab{padding:8px 16px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--amber);border-bottom-color:var(--amber);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ── Crisis banner ── */
+.crisis-banner{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);padding:10px 14px;margin-bottom:16px;display:none;}
+.crisis-banner.show{display:block;}
+.crisis-text{font-family:var(--mono);font-size:11px;color:var(--red);letter-spacing:.06em;}
+
+/* ── Sidebar dossier ── */
+.dossier-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.dossier-row:last-child{border:none;}
+.dossier-key{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;}
+.dossier-val{font-family:var(--sans);font-size:12px;color:var(--text);text-align:right;}
+.empty-state{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:20px 0;font-style:italic;}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="brand-id">
+    <div>
+      <div class="brand-name-top" id="topBrandName">Loading…</div>
+      <div class="brand-tag" id="topBrandTag">—</div>
+    </div>
+  </div>
+  <div class="top-right">
+    <span><span class="live-dot"></span>Live</span>
+    <span>Week <strong id="topWeek" style="color:var(--amber)">—</strong> of 18</span>
+    <span id="topPhase" style="color:var(--text2)">—</span>
+    <a href="index.html" style="color:var(--amber);text-decoration:none;font-size:11px">↗ Leaderboard</a>
+  </div>
+</div>
+
+<!-- Rival Banner -->
+<div class="rival-banner" id="rivalBanner">
+  <div>
+    <div class="rival-label">⚔ Designated Rival</div>
+    <div class="rival-name" id="rivalName">—</div>
+  </div>
+  <div class="rival-warning">Event card effects amplified against this brand · Compete directly in Phase 5</div>
+</div>
+
+<!-- Crisis Banner -->
+<div id="crisisBanner" class="crisis-banner" style="margin:12px 24px 0;">
+  <div class="crisis-text" id="crisisText">⚠ CRISIS ACTIVE</div>
+</div>
+
+<div class="page">
+
+  <!-- ═══ MAIN COLUMN ═══ -->
+  <div class="main">
+
+    <!-- Phase tracker -->
+    <div style="margin-bottom:20px">
+      <div class="phase-label" id="phaseLabel">Phase — · Week —</div>
+      <div class="phase-track" id="phaseTrack"></div>
+    </div>
+
+    <!-- Score hero -->
+    <div class="score-hero">
+      <div class="score-block">
+        <div class="score-block-label">Market Score</div>
+        <div class="score-block-val" id="heroMarket" style="color:var(--amber)">—</div>
+      </div>
+      <div class="score-block">
+        <div class="score-block-label">Stock Price</div>
+        <div class="score-block-val" id="heroStock" style="color:var(--green)">—</div>
+      </div>
+      <div class="score-block">
+        <div class="score-block-label">Total Points</div>
+        <div class="score-block-val" id="heroPoints" style="color:var(--text2)">—</div>
+      </div>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="stats-grid" id="statsGrid">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Sentiment meter (full-width) -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Public Sentiment</div>
+      <div style="display:grid;grid-template-columns:1fr 120px;gap:20px;align-items:center">
+        <div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:8px" id="sentimentDesc">How the public feels about your brand — independent of product quality.</div>
+          <div class="sentiment-meter">
+            <div class="sentiment-needle" id="sentimentNeedle" style="left:50%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px">
+            <span>Hostile</span><span>Neutral</span><span>Beloved</span>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:var(--serif);font-size:44px;font-weight:900" id="sentimentVal">—</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase" id="sentimentLabel">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sparkline -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Stock Price History</div>
+      <div class="stock-meta">
+        <div class="stock-price" id="stockPrice">$—</div>
+        <div class="stock-change" id="stockChange"></div>
+      </div>
+      <div class="sparkline-wrap" id="sparklineWrap"></div>
+    </div>
+
+    <!-- Tabs: Events / Journal / Letters / Scores -->
+    <div class="tabs">
+      <div class="tab active" data-tab="events">📰 Events</div>
+      <div class="tab" data-tab="journal">📓 Journal</div>
+      <div class="tab" data-tab="letters">📬 Shareholder Letters</div>
+      <div class="tab" data-tab="scores">📋 Scores</div>
+    </div>
+
+    <div class="tab-panel active" id="tab-events">
+      <div id="eventLog"><div class="empty-state">No events yet this season.</div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-journal">
+      <div id="journalLog"><div class="empty-state">No journal entries yet.</div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-letters">
+      <div id="letterLog"><div class="empty-state">No shareholder letters yet.</div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-scores">
+      <div id="scoreLog"><div class="empty-state">No deliverables scored yet.</div></div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <div class="sidebar">
+    <div class="card-title" style="margin-bottom:14px">Brand Dossier</div>
+    <div id="dossierRows"></div>
+
+    <div style="margin-top:24px">
+      <div class="card-title" style="margin-bottom:10px">Class Standing</div>
+      <div id="standingWrap"></div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div class="card-title" style="margin-bottom:10px">This Week's Journal Prompt</div>
+      <div style="font-family:var(--sans);font-size:12px;line-height:1.6;color:var(--text2);font-style:italic;background:var(--bg4);padding:12px;border-left:3px solid var(--amber)" id="currentPrompt">—</div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div class="card-title" style="margin-bottom:10px">Quick Links</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <a href="index.html" style="font-family:var(--mono);font-size:11px;color:var(--amber);text-decoration:none">↗ Live Leaderboard</a>
+        <a id="paperLink" href="newspaper.html" style="font-family:var(--mono);font-size:11px;color:var(--amber);text-decoration:none">↗ Brand Bulletin (Print)</a>
+        <a href="market-dispatch.html" style="font-family:var(--mono);font-size:11px;color:var(--amber);text-decoration:none">↗ Market Dispatch</a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script src="js/firebase-config.js"></script>
+<script src="js/game-engine.js"></script>
+<script src="js/event-cards.js"></script>
+<script>
+// ── Get team ID from URL ──────────────────────────────────────
+const params = new URLSearchParams(window.location.search);
+const TEAM_ID = params.get('team');
+
+if (!TEAM_ID) {
+  document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:monospace;color:#f5a623">No team ID provided.<br><br><a href="index.html" style="color:#f5a623">← Back to Leaderboard</a></div>';
+} else {
+  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.database();
+
+  let seasonData = {}, teamData = {}, allTeams = {};
+
+  db.ref('season').on('value', snap => { seasonData = snap.val() || {}; render(); });
+  db.ref('teams').on('value', snap => { allTeams = snap.val() || {}; teamData = allTeams[TEAM_ID] || {}; render(); });
+
+  // ── Tabs ──────────────────────────────────────────────────────
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ── Main render ──────────────────────────────────────────────
+  function render() {
+    if (!teamData.brandName) return;
+
+    const stats  = teamData.stats || {};
+    const week   = seasonData.currentWeek || 1;
+    const phase  = GameEngine.getPhase(week);
+    const score  = GameEngine.calcMarketScore(stats);
+    const crisis = GameEngine.checkCrisis(stats);
+    const history = teamData.stockHistory || [];
+    const trend  = GameEngine.stockTrend(history);
+
+    // Top bar
+    document.title = teamData.brandName + ' — BrandOps';
+    document.getElementById('topBrandName').textContent = teamData.brandName;
+    document.getElementById('topBrandTag').textContent  = (teamData.industry||'') + ' · ' + (teamData.country||'') + ' · ' + (teamData.targetDemo||'');
+    document.getElementById('topWeek').textContent      = week;
+    document.getElementById('topPhase').textContent     = phase.emoji + ' ' + phase.name;
+
+    // Newspaper link
+    document.getElementById('paperLink').href = 'newspaper.html?team=' + TEAM_ID + '&week=' + week;
+
+    // Crisis
+    const crisisBanner = document.getElementById('crisisBanner');
+    if (crisis) {
+      crisisBanner.classList.add('show');
+      document.getElementById('crisisText').textContent = '⚠ ' + crisis.message;
+    } else {
+      crisisBanner.classList.remove('show');
+    }
+
+    // Rival
+    if (teamData.rivalId && allTeams[teamData.rivalId]) {
+      document.getElementById('rivalBanner').classList.add('show');
+      document.getElementById('rivalName').textContent = '⚔ ' + allTeams[teamData.rivalId].brandName;
+    }
+
+    // Phase tracker
+    renderPhaseTrack(week);
+
+    // Score hero
+    document.getElementById('heroMarket').textContent = score;
+    document.getElementById('heroStock').textContent  = history.length
+      ? GameEngine.formatDollar(history[history.length - 1]) : '$—';
+    document.getElementById('heroPoints').textContent = teamData.totalPoints || 0;
+
+    // Stats grid
+    renderStats(stats);
+
+    // Sentiment
+    renderSentiment(stats.sentiment || 50);
+
+    // Sparkline
+    document.getElementById('stockPrice').textContent   = history.length ? GameEngine.formatDollar(history[history.length-1]) : '$—';
+    document.getElementById('stockChange').textContent  = trend.diff || '';
+    document.getElementById('stockChange').style.color  = trend.color;
+    document.getElementById('sparklineWrap').innerHTML  = GameEngine.sparklineSVG(history, 440, 56);
+
+    // Journal prompt
+    document.getElementById('currentPrompt').textContent = JOURNAL_PROMPTS[week] || 'Reflect on this week\'s creative decisions.';
+
+    // Tabs
+    renderEventLog();
+    renderJournal();
+    renderLetters();
+    renderScoreLog();
+
+    // Dossier
+    renderDossier();
+
+    // Standing
+    renderStanding(score);
+  }
+
+  function renderPhaseTrack(week) {
+    const label = document.getElementById('phaseLabel');
+    const track = document.getElementById('phaseTrack');
+    const phase = GameEngine.getPhase(week);
+    label.textContent = phase.emoji + ' ' + phase.name + ' · Week ' + week + ' of 18';
+    track.innerHTML = Array.from({length: 18}, (_, i) => {
+      const w = i + 1;
+      const cls = w < week ? 'done' : w === week ? 'current' : '';
+      return `<div class="phase-pip ${cls}" title="Week ${w}"></div>`;
+    }).join('');
+  }
+
+  function renderStats(stats) {
+    const defs = [
+      { key:'budget',     label:'Budget',     note:'Resources' },
+      { key:'demand',     label:'Demand',     note:'Consumer pull' },
+      { key:'reputation', label:'Reputation', note:'Public trust' },
+      { key:'innovation', label:'Innovation', note:'Tech edge' },
+      { key:'risk',       label:'Risk',       note:'Lower is better' },
+    ];
+    document.getElementById('statsGrid').innerHTML = defs.map(d => {
+      const val   = stats[d.key] !== undefined ? stats[d.key] : 0;
+      const color = GameEngine.statColor(d.key, val);
+      return `<div class="stat-tile">
+        <div class="stat-tile-label">${d.label}</div>
+        <div class="stat-tile-val" style="color:${color}">${val}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">${d.note}</div>
+        <div class="stat-tile-bar">
+          <div class="stat-tile-fill" style="width:${val}%;background:${color}"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderSentiment(val) {
+    const color = GameEngine.statColor('sentiment', val);
+    const label = val >= 70 ? 'Beloved' : val >= 50 ? 'Positive' : val >= 35 ? 'Mixed' : val >= 20 ? 'Negative' : 'Hostile';
+    document.getElementById('sentimentVal').textContent   = val;
+    document.getElementById('sentimentVal').style.color   = color;
+    document.getElementById('sentimentLabel').textContent = label;
+    document.getElementById('sentimentNeedle').style.left = val + '%';
+  }
+
+  function renderEventLog() {
+    const log = Object.values(teamData.eventLog || {});
+    const el  = document.getElementById('eventLog');
+    if (!log.length) { el.innerHTML = '<div class="empty-state">No events yet.</div>'; return; }
+    el.innerHTML = log.sort((a,b) => b.timestamp - a.timestamp).map(e => {
+      const card   = CardLibrary.getById(e.cardId);
+      const fx     = e.choice === 'A' ? card?.choiceA?.effects : e.choice === 'B' ? card?.choiceB?.effects : e.effects;
+      const chips  = Object.entries(fx || {}).map(([s,v]) =>
+        `<span class="effect-pill ${v>0?'pos':'neg'}">${s} ${v>0?'+':''}${v}</span>`
+      ).join('');
+      return `<div class="event-entry">
+        <div class="event-meta">Week ${e.week} · ${(e.deck||'').toUpperCase()}</div>
+        <div class="event-title-row">${e.cardTitle||e.cardId}</div>
+        <div class="event-effects-row">${chips}</div>
+        ${e.choice ? `<div class="event-choice">Choice ${e.choice} selected</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function renderJournal() {
+    const entries = Object.values(teamData.journalEntries || {});
+    const el = document.getElementById('journalLog');
+    if (!entries.length) { el.innerHTML = '<div class="journal-empty">No journal entries yet. Your teacher will add them here.</div>'; return; }
+    el.innerHTML = entries.sort((a,b) => b.week - a.week).map(e => `
+      <div class="journal-entry">
+        <div class="journal-week">Week ${e.week} · ${GameEngine.getPhase(e.week).name}</div>
+        <div class="journal-prompt">${JOURNAL_PROMPTS[e.week] || ''}</div>
+        <div class="journal-text">${(e.text||'').replace(/\n/g,'<br>')}</div>
+      </div>`).join('');
+  }
+
+  function renderLetters() {
+    const letters = Object.values(teamData.shareholderLetters || {});
+    const el = document.getElementById('letterLog');
+    if (!letters.length) { el.innerHTML = '<div class="empty-state">No shareholder letters yet.</div>'; return; }
+    el.innerHTML = letters.sort((a,b) => a.phase - b.phase).map(l => {
+      const prompt = SHAREHOLDER_LETTER_PROMPTS.find(p => p.phase === l.phase);
+      return `<div class="letter-entry">
+        <div class="letter-phase">Phase ${l.phase} Shareholder Letter</div>
+        ${prompt ? `<div class="letter-prompt">${prompt.prompt}</div>` : ''}
+        <div class="letter-body">${(l.text||'').replace(/</g,'&lt;')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderScoreLog() {
+    const log = Object.values(teamData.scoreLog || {});
+    const el  = document.getElementById('scoreLog');
+    if (!log.length) { el.innerHTML = '<div class="empty-state">No deliverables scored yet.</div>'; return; }
+    el.innerHTML = log.sort((a,b) => b.timestamp - a.timestamp).map(e => {
+      const del = DELIVERABLE_TYPES[e.deliverable];
+      return `<div class="score-entry">
+        <div>
+          <div style="color:var(--text)">${del?.label || e.deliverable}</div>
+          <div style="font-size:10px;color:var(--muted)">Week ${e.week}</div>
+        </div>
+        <span class="score-badge s${e.score}">${e.label} (+${e.points})</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderDossier() {
+    const rows = [
+      ['Industry',   teamData.industry    || '—'],
+      ['Country',    teamData.country     || '—'],
+      ['Demo',       teamData.targetDemo  || '—'],
+      ['Components', teamData.componentTier || '—'],
+      ['Shipping',   teamData.shippingMethod || '—'],
+      ['Price Point',teamData.pricePoint  || '—'],
+      ['Members',    teamData.members     || '—'],
+    ];
+    document.getElementById('dossierRows').innerHTML = rows.map(([k,v]) =>
+      `<div class="dossier-row"><span class="dossier-key">${k}</span><span class="dossier-val">${v}</span></div>`
+    ).join('');
+  }
+
+  function renderStanding(myScore) {
+    const sorted = Object.values(allTeams)
+      .map(t => ({ name: t.brandName, score: GameEngine.calcMarketScore(t.stats || {}) }))
+      .sort((a,b) => b.score - a.score);
+    const rank = sorted.findIndex(t => t.name === teamData.brandName) + 1;
+    const total = sorted.length;
+    document.getElementById('standingWrap').innerHTML = `
+      <div style="text-align:center;padding:8px 0">
+        <div style="font-family:var(--serif);font-size:40px;font-weight:900;color:var(--amber)">${rank}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">of ${total} brands</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text2);margin-top:6px">Market Score: <strong style="color:var(--amber)">${myScore}</strong></div>
+      </div>`;
+  }
+}
+</script>
+</body>
+</html>

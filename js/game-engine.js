@@ -4,133 +4,123 @@
 
 const GameEngine = {
 
-  // ── Market Score ────────────────────────────────────────────
+  // ── Market Score ─────────────────────────────────────────────
+  // Sentiment is a bonus modifier (+/- up to 10 points)
   calcMarketScore(stats) {
+    const s = stats || {};
+    const sentimentBonus = Math.round(((s.sentiment || 50) - 50) / 5);
     return Math.round(
-      stats.demand +
-      stats.reputation +
-      stats.innovation +
-      (stats.budget / 10) -
-      stats.risk
+      (s.demand      || 0) +
+      (s.reputation  || 0) +
+      (s.innovation  || 0) +
+      ((s.budget     || 0) / 10) -
+      (s.risk        || 0) +
+      sentimentBonus
     );
   },
 
-  // ── Stock Price ─────────────────────────────────────────────
+  // ── Stock Price ───────────────────────────────────────────────
   calcStockPrice(marketScore, volatility = 50) {
-    const base = GAME_CONFIG.baseStockPrice;
+    const base  = GAME_CONFIG.baseStockPrice;
     const drift = ((Math.random() * 4) - 2) * (volatility / 50);
     return Math.max(0.01, parseFloat((base + (marketScore / 10) + drift).toFixed(2)));
   },
 
-  // ── Get Current Phase ───────────────────────────────────────
+  // ── Get Phase ─────────────────────────────────────────────────
   getPhase(week) {
     return GAME_CONFIG.phases.find(p => week >= p.weeks[0] && week <= p.weeks[1])
       || GAME_CONFIG.phases[0];
   },
 
-  // ── Apply Event Card Effects ────────────────────────────────
+  // ── Apply Event Card Effects ──────────────────────────────────
   applyCardEffects(stats, effects, volatility = 50) {
-    const vol = volatility / 50; // 1.0 at neutral, up to 2.0 at max chaos
+    const vol      = volatility / 50;
     const newStats = { ...stats };
     for (const [stat, delta] of Object.entries(effects)) {
       if (stat in newStats) {
         const scaled = Math.round(delta * vol);
-        newStats[stat] = Math.min(
-          GAME_CONFIG.statMax,
-          Math.max(GAME_CONFIG.statMin, newStats[stat] + scaled)
-        );
+        newStats[stat] = Math.min(GAME_CONFIG.statMax, Math.max(GAME_CONFIG.statMin, newStats[stat] + scaled));
       }
     }
     return newStats;
   },
 
-  // ── Apply Deliverable Score ─────────────────────────────────
+  // ── Apply Deliverable Score ───────────────────────────────────
   applyDeliverableScore(stats, deliverableKey, scoreValue) {
     const deliverable = DELIVERABLE_TYPES[deliverableKey];
-    const effect = GAME_CONFIG.scoreEffects[scoreValue];
+    const effect      = GAME_CONFIG.scoreEffects[scoreValue];
     if (!deliverable || !effect) return stats;
 
-    const newStats = { ...stats };
+    const newStats    = { ...stats };
     const boostAmount = Math.round(8 * effect.multiplier);
 
     for (const statName of deliverable.affects) {
-      if (statName in newStats) {
-        if (statName === 'risk') {
-          // Higher score = LOWER risk (good performance reduces risk)
-          newStats[statName] = Math.max(0, newStats[statName] - boostAmount);
-        } else {
-          newStats[statName] = Math.min(100, newStats[statName] + boostAmount);
-        }
+      if (statName === 'risk') {
+        newStats[statName] = Math.max(0,   newStats[statName] - boostAmount);
+      } else if (statName in newStats) {
+        newStats[statName] = Math.min(100, newStats[statName] + boostAmount);
       }
     }
     return newStats;
   },
 
-  // ── Clamp Stats ─────────────────────────────────────────────
-  clampStats(stats) {
-    const clamped = {};
-    for (const [k, v] of Object.entries(stats)) {
-      clamped[k] = Math.min(GAME_CONFIG.statMax, Math.max(GAME_CONFIG.statMin, v));
-    }
-    return clamped;
+  // ── Default Stats (now includes sentiment) ───────────────────
+  defaultStats() {
+    return { budget: 60, demand: 45, reputation: 45, innovation: 45, risk: 15, sentiment: 50 };
   },
 
-  // ── Crisis Check ────────────────────────────────────────────
+  // ── Crisis Check ──────────────────────────────────────────────
   checkCrisis(stats) {
-    if (stats.risk >= 100) return { type: 'risk', message: 'MAXIMUM RISK — Crisis Event Triggered!' };
-    if (stats.budget <= 0)  return { type: 'bankrupt', message: 'BUDGET DEPLETED — Emergency Mode!' };
+    if (stats.risk      >= 100) return { type: 'risk',     message: 'MAXIMUM RISK — Crisis Event Triggered!' };
+    if (stats.budget    <= 0)   return { type: 'bankrupt', message: 'BUDGET DEPLETED — Emergency Mode!' };
+    if (stats.sentiment <= 10)  return { type: 'sentiment',message: 'PUBLIC SENTIMENT COLLAPSED — Boycott Risk!' };
     return null;
   },
 
-  // ── Generate Random Brand Dossier ───────────────────────────
+  // ── Generate Brand Dossier ────────────────────────────────────
   generateBrandDossier(name) {
     const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-    const industry = pick(BRAND_DATA.industries);
-
     return {
-      brandName: name || "Brand " + Math.floor(Math.random() * 999),
-      industry,
-      country: pick(BRAND_DATA.countries),
-      targetDemo: pick(BRAND_DATA.demographics),
-      componentTier: pick(BRAND_DATA.componentTiers),
+      brandName:      name || "Brand " + Math.floor(Math.random() * 999),
+      industry:       pick(BRAND_DATA.industries),
+      country:        pick(BRAND_DATA.countries),
+      targetDemo:     pick(BRAND_DATA.demographics),
+      componentTier:  pick(BRAND_DATA.componentTiers),
       shippingMethod: pick(BRAND_DATA.shippingMethods),
-      pricePoint: pick(BRAND_DATA.pricePoints),
+      pricePoint:     pick(BRAND_DATA.pricePoints),
       stats: {
-        budget:     Math.floor(Math.random() * 30) + 50, // 50-80
-        demand:     Math.floor(Math.random() * 30) + 30, // 30-60
-        reputation: Math.floor(Math.random() * 30) + 30, // 30-60
-        innovation: Math.floor(Math.random() * 30) + 30, // 30-60
-        risk:       Math.floor(Math.random() * 20) + 5,  // 5-25
+        budget:     Math.floor(Math.random() * 30) + 50,
+        demand:     Math.floor(Math.random() * 30) + 30,
+        reputation: Math.floor(Math.random() * 30) + 30,
+        innovation: Math.floor(Math.random() * 30) + 30,
+        risk:       Math.floor(Math.random() * 20) + 5,
+        sentiment:  Math.floor(Math.random() * 20) + 40, // 40-60 to start neutral
       },
-      stockHistory: [],
-      eventLog: [],
-      scoreLog: [],
-      totalPoints: 0,
+      stockHistory:       [],
+      eventLog:           {},
+      scoreLog:           {},
+      shareholderLetters: {},
+      journalEntries:     {},
+      rivalId:            null,
+      totalPoints:        0,
     };
   },
 
-  // ── Generate Starting Season ────────────────────────────────
+  // ── New Season ────────────────────────────────────────────────
   generateNewSeason() {
-    return {
-      currentWeek: 1,
-      volatility: 40,
-      teams: {},
-      activeCards: {},
-      lastUpdated: Date.now(),
-      started: true,
-    };
+    return { currentWeek: 1, volatility: 40, activeCards: {}, lastUpdated: Date.now() };
   },
 
-  // ── Format Currency ─────────────────────────────────────────
-  formatDollar(val) {
-    return "$" + parseFloat(val).toFixed(2);
-  },
-
-  // ── Stat Bar Color ──────────────────────────────────────────
+  // ── Stat Color ────────────────────────────────────────────────
   statColor(statName, value) {
     if (statName === 'risk') {
       if (value < 30) return '#22c55e';
       if (value < 60) return '#eab308';
+      return '#ef4444';
+    }
+    if (statName === 'sentiment') {
+      if (value > 65) return '#22c55e';
+      if (value > 35) return '#eab308';
       return '#ef4444';
     }
     if (value > 70) return '#22c55e';
@@ -138,14 +128,40 @@ const GameEngine = {
     return '#ef4444';
   },
 
-  // ── Stock trend arrow ───────────────────────────────────────
+  // ── Stock Trend ───────────────────────────────────────────────
   stockTrend(history) {
-    if (!history || history.length < 2) return { arrow: '—', color: '#9ca3af' };
+    if (!history || history.length < 2) return { arrow: '—', color: '#9ca3af', diff: '' };
     const last = history[history.length - 1];
     const prev = history[history.length - 2];
     const diff = last - prev;
-    if (diff > 0) return { arrow: '▲', color: '#22c55e', diff: '+' + diff.toFixed(2) };
-    if (diff < 0) return { arrow: '▼', color: '#ef4444', diff: diff.toFixed(2) };
-    return { arrow: '—', color: '#9ca3af', diff: '0.00' };
-  }
+    if (diff > 0) return { arrow: '▲', color: '#22c55e', diff: '+$' + diff.toFixed(2) };
+    if (diff < 0) return { arrow: '▼', color: '#ef4444', diff: '-$' + Math.abs(diff).toFixed(2) };
+    return { arrow: '—', color: '#9ca3af', diff: '' };
+  },
+
+  // ── Sparkline SVG ─────────────────────────────────────────────
+  // Returns an inline SVG string for a stock price sparkline
+  sparklineSVG(history, width = 200, height = 48, color = '#f5a623') {
+    if (!history || history.length < 2) return '<span style="color:#555;font-size:11px">No data yet</span>';
+    const vals  = history.slice(-20);
+    const min   = Math.min(...vals);
+    const max   = Math.max(...vals);
+    const range = max - min || 1;
+    const step  = width / (vals.length - 1);
+    const pts   = vals.map((v, i) => {
+      const x = i * step;
+      const y = height - ((v - min) / range) * (height - 6) - 3;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    const trend = vals[vals.length - 1] >= vals[0] ? '#22c55e' : '#ef4444';
+    return `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="${pts}" fill="none" stroke="${trend}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${((vals.length-1)*step).toFixed(1)}" cy="${(height - ((vals[vals.length-1]-min)/range)*(height-6)-3).toFixed(1)}" r="3" fill="${trend}"/>
+    </svg>`;
+  },
+
+  // ── Format Dollar ─────────────────────────────────────────────
+  formatDollar(val) {
+    return '$' + parseFloat(val || 0).toFixed(2);
+  },
 };
