@@ -560,13 +560,23 @@ textarea { resize: vertical; min-height: 60px; }
 <script>
 // ── Auth ──────────────────────────────────────────────────
 function doLogin() {
-  const pw = document.getElementById('pwInput').value;
+  var pw = document.getElementById('pwInput').value.trim();
+  var err = document.getElementById('loginError');
+  
+  // Debug line — remove after it works
+  console.log('Typed:', pw, '| Expected:', TEACHER_PASSWORD, '| Match:', pw === TEACHER_PASSWORD);
+  
+  if (typeof TEACHER_PASSWORD === 'undefined') {
+    err.textContent = 'Error: firebase-config.js not loading. Check file path.';
+    return;
+  }
   if (pw === TEACHER_PASSWORD) {
+    err.textContent = '';
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appShell').style.display = 'block';
     initApp();
   } else {
-    document.getElementById('loginError').textContent = 'Incorrect password.';
+    err.textContent = 'Incorrect password. (Check browser console for debug info)';
   }
 }
 
