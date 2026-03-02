@@ -211,29 +211,35 @@ const db = firebase.database();
 let seasonData = {}, teamsData = {};
 
 let _seasonLoaded = false, _teamsLoaded = false;
-db.ref('season').on('value',  s => { seasonData = s.val() || {}; _seasonLoaded = true; if (_teamsLoaded) render(); });
-db.ref('teams').on('value',   s => { teamsData  = s.val() || {}; _teamsLoaded  = true; if (_seasonLoaded) render(); });
+db.ref('season').on('value', function(s) {
+  seasonData = s.val() || {};
+  _seasonLoaded = true;
+  if (_teamsLoaded) render();
+});
+db.ref('teams').on('value', function(s) {
+  teamsData = s.val() || {};
+  _teamsLoaded = true;
+  if (_seasonLoaded) render();
+});
 
 const PHASE_OUTLOOKS = {
   "Brand Launch":        "Teams are still establishing their identities. Expect wide variation in Market Scores as some brands launch cleanly and others struggle with focus. The brands that defined their target demographic clearly in Week 1 should be pulling ahead. Volatility is manageable — use this relative calm to build equity before Phase 2 arrives.",
   "Market Pressure":     "The simulation gets real this week. Event cards are hitting harder and the gap between prepared and unprepared brands is widening. Watch for Risk scores climbing — any team above 60 Risk is one bad event from a crisis. The best brands will use this phase to build a crisis communications playbook, not just react to one.",
-  "Super Bowl Campaign": "This is the highest-stakes creative phase of the semester. Production quality and storytelling depth will drive the biggest single-deliverable stat swings of the season. Teams should be building toward their 15-second cutdown as a distinct creative challenge — compression is a skill, not just editing.",
-  "Product Placement":   "The quiet phase. Sentiment scores become the differentiator here — brands that integrated naturally will see public goodwill climb while forced placements get punished. Watch the gap between Reputation and Sentiment: a brand can have high reputation and low sentiment, and that tension is the lesson.",
+  "Super Bowl Campaign": "This is the highest-stakes creative phase of the semester. Production quality and storytelling depth will drive the biggest single-deliverable stat swings of the season. Teams should be building toward their 15-second cutdown as a distinct creative challenge.",
+  "Product Placement":   "The quiet phase. Sentiment scores become the differentiator here — brands that integrated naturally will see public goodwill climb while forced placements get punished. Watch the gap between Reputation and Sentiment.",
   "Market War":          "Final standings are taking shape and teams within striking distance of the lead are making their moves. Comparative and satirical campaigns are live in the market. Risk scores from aggressive attacks will determine who survives Phase 6 intact.",
-  "Rebrand or Die":      "The terminal events have fired. Every brand is now in transformation mode. The Investor Pitch Deck is the final opportunity for a major stat swing — teams that have been building a coherent brand story all semester will have the most compelling pitch. Final Market Scores lock at the end of Week 18.",
+  "Rebrand or Die":      "The terminal events have fired. Every brand is now in transformation mode. The Investor Pitch Deck is the final opportunity for a major stat swing — teams that have been building a coherent brand story all semester will have the most compelling pitch.",
 };
 
 function render() {
-  try {
-  // Clear loading state
-  const loadEl = document.getElementById('loadingIndicator');
+  var loadEl = document.getElementById('loadingIndicator');
   if (loadEl) loadEl.style.display = 'none';
 
-  const week   = seasonData.currentWeek || 1;
-  const vol    = seasonData.volatility  || 40;
-  const phase  = GameEngine.getPhase(week);
-  const teams  = Object.entries(teamsData);
-  const now    = new Date();
+  var week   = seasonData.currentWeek || 1;
+  var vol    = seasonData.volatility  || 40;
+  var phase  = GameEngine.getPhase(week);
+  var teams  = Object.entries(teamsData);
+  var now    = new Date();
 
   document.getElementById('nlDate').textContent      = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   document.getElementById('nlWeekLabel').textContent = 'Week ' + week + ' · Vol ' + vol;
@@ -245,95 +251,88 @@ function render() {
 
   if (!teams.length) {
     document.getElementById('mainHeadline').textContent = 'Awaiting Market Participants';
-    document.getElementById('mainDeck').textContent = 'Connected to Firebase — no teams in the simulation yet. Add teams in the teacher console.';
-    // Still populate date/week/phase fields
+    document.getElementById('mainDeck').textContent = 'Connected to Firebase — no teams yet. Add teams in the teacher console.';
     return;
   }
 
-  const sorted = teams.map(([id, t]) => ({
-    id, ...t,
-    score: GameEngine.calcMarketScore(t.stats || {}),
-    sentiment: t.stats?.sentiment || 50,
-  })).sort((a,b) => b.score - a.score);
+  var sorted = teams.map(function(e) {
+    var id = e[0]; var t = e[1];
+    return Object.assign({id: id}, t, {
+      score:     GameEngine.calcMarketScore(t.stats || {}),
+      sentiment: (t.stats && t.stats.sentiment) || 50,
+    });
+  }).sort(function(a,b) { return b.score - a.score; });
 
-  const leader = sorted[0];
-  const laggard = sorted[sorted.length - 1];
+  var leader = sorted[0];
 
-  // Headline based on week/phase
-  const headlines = {
-    "Brand Launch":        `${leader.brandName} LEADS EARLY MARKET — ${teams.length} BRANDS COMPETE FOR POSITION`,
-    "Market Pressure":     `CRISES SEPARATE THE STRONG FROM THE STRUGGLING — ${leader.brandName} HOLDS THE TOP`,
-    "Super Bowl Campaign": `ALL EYES ON THE BIG GAME — WHO HAS THE CAMPAIGN OF THE SEASON?`,
-    "Product Placement":   `SENTIMENT SCORES DIVERGE AS PLACEMENT QUALITY VARIES ACROSS THE MARKET`,
-    "Market War":          `MARKET WAR HEATS UP — ${leader.brandName} DEFENDS ITS POSITION`,
-    "Rebrand or Die":      `THE FINAL TRANSFORMATION — EVERY BRAND FIGHTS FOR ITS FUTURE`,
+  var headlines = {
+    "Brand Launch":        leader.brandName + " LEADS EARLY MARKET — " + teams.length + " BRANDS COMPETE FOR POSITION",
+    "Market Pressure":     "CRISES SEPARATE THE STRONG FROM THE STRUGGLING — " + leader.brandName + " HOLDS THE TOP",
+    "Super Bowl Campaign": "ALL EYES ON THE BIG GAME — WHO HAS THE CAMPAIGN OF THE SEASON?",
+    "Product Placement":   "SENTIMENT SCORES DIVERGE AS PLACEMENT QUALITY VARIES ACROSS THE MARKET",
+    "Market War":          "MARKET WAR HEATS UP — " + leader.brandName + " DEFENDS ITS POSITION",
+    "Rebrand or Die":      "THE FINAL TRANSFORMATION — EVERY BRAND FIGHTS FOR ITS FUTURE",
   };
   document.getElementById('mainHeadline').textContent = headlines[phase.name] || 'WEEK ' + week + ' MARKET REPORT';
-  document.getElementById('mainDeck').textContent = `${phase.emoji} ${phase.name} · ${teams.length} active brands · Market Volatility: ${vol}/100`;
+  document.getElementById('mainDeck').textContent     = phase.emoji + ' ' + phase.name + ' · ' + teams.length + ' active brands · Market Volatility: ' + vol + '/100';
 
   // Leaderboard
-  document.getElementById('leaderboard').innerHTML = sorted.map((t,i) => {
-    const trend = GameEngine.stockTrend(t.stockHistory || []);
-    const stock = (t.stockHistory||[]).length ? GameEngine.formatDollar(t.stockHistory[t.stockHistory.length-1]) : '—';
-    return `<div class="lb-row">
-      <span class="lb-rank">${i+1}</span>
-      <span class="lb-name">${t.brandName}</span>
-      <span>
-        <span class="lb-score">${t.score}</span>
-        <span class="lb-change" style="color:${trend.color};margin-left:6px">${stock} ${trend.arrow}</span>
-      </span>
-    </div>`;
+  document.getElementById('leaderboard').innerHTML = sorted.map(function(t, i) {
+    var trend = GameEngine.stockTrend(t.stockHistory || []);
+    var stock = (t.stockHistory||[]).length ? GameEngine.formatDollar(t.stockHistory[t.stockHistory.length-1]) : '—';
+    return '<div class="lb-row">' +
+      '<span class="lb-rank">' + (i+1) + '</span>' +
+      '<span class="lb-name">' + t.brandName + '</span>' +
+      '<span><span class="lb-score">' + t.score + '</span>' +
+      '<span class="lb-change" style="color:' + trend.color + ';margin-left:6px">' + stock + ' ' + trend.arrow + '</span></span>' +
+    '</div>';
   }).join('');
 
-  // Top mover (highest score)
-  document.getElementById('topMoverBox').innerHTML = `
-    <div class="mover-box">
-      <div class="mover-label">↑ Market Leader This Week</div>
-      <div class="mover-name">${leader.brandName}</div>
-      <div class="mover-detail">Market Score: ${leader.score} · ${leader.industry||''} · ${leader.targetDemo||''}</div>
-    </div>`;
+  // Top mover
+  document.getElementById('topMoverBox').innerHTML =
+    '<div class="mover-box">' +
+      '<div class="mover-label">↑ Market Leader This Week</div>' +
+      '<div class="mover-name">' + leader.brandName + '</div>' +
+      '<div class="mover-detail">Market Score: ' + leader.score + ' · ' + (leader.industry||'') + ' · ' + (leader.targetDemo||'') + '</div>' +
+    '</div>';
 
   // Events
-  const activeCards = seasonData.activeCards || {};
-  const eventEntries = Object.entries(activeCards);
+  var activeCards  = seasonData.activeCards || {};
+  var eventEntries = Object.entries(activeCards);
   document.getElementById('eventsThisWeek').innerHTML = eventEntries.length
-    ? eventEntries.map(([tid, cd]) => {
-        const t    = teamsData[tid];
-        const card = CardLibrary.getById(cd.cardId);
+    ? eventEntries.map(function(e) {
+        var tid = e[0]; var cd = e[1];
+        var t    = teamsData[tid];
+        var card = CardLibrary.getById(cd.cardId);
         if (!t || !card) return '';
-        return `<div class="event-item">
-          <div class="event-brand">${t.brandName}</div>
-          <div class="event-title">${card.title}</div>
-          <div style="font-size:10px;color:#6b5a3a">${card.storyText.substring(0,80)}…</div>
-        </div>`;
+        return '<div class="event-item">' +
+          '<div class="event-brand">' + t.brandName + '</div>' +
+          '<div class="event-title">' + card.title + '</div>' +
+          '<div style="font-size:10px;color:#6b5a3a">' + card.storyText.substring(0,80) + '…</div>' +
+        '</div>';
       }).join('')
     : '<div class="no-data">No active events this week.</div>';
 
-  // Stat swings — find biggest demand change from score log
-  const swings = sorted.map(t => {
-    const log = Object.values(t.scoreLog || {}).filter(e => e.week === week);
-    const pts = log.reduce((sum,e) => sum + (e.points||0), 0);
-    return { name: t.brandName, pts };
-  }).filter(t => t.pts > 0).sort((a,b) => b.pts - a.pts);
+  // Stat swings
+  var swings = sorted.map(function(t) {
+    var log = Object.values(t.scoreLog || {}).filter(function(e) { return e.week === week; });
+    var pts = log.reduce(function(sum,e) { return sum + (e.points||0); }, 0);
+    return { name: t.brandName, pts: pts };
+  }).filter(function(t) { return t.pts > 0; }).sort(function(a,b) { return b.pts - a.pts; });
 
   document.getElementById('statSwings').innerHTML = swings.length
-    ? swings.slice(0,5).map(t =>
-        `<div class="stat-move">
-          <span>${t.name}</span>
-          <span class="stat-move-up">+${t.pts} pts this week</span>
-        </div>`
-      ).join('')
+    ? swings.slice(0,5).map(function(t) {
+        return '<div class="stat-move"><span>' + t.name + '</span><span class="stat-move-up">+' + t.pts + ' pts this week</span></div>';
+      }).join('')
     : '<div class="no-data">No deliverables scored this week.</div>';
 
   // Sentiment report
-  const sentSorted = [...sorted].sort((a,b) => b.sentiment - a.sentiment);
-  document.getElementById('sentimentReport').innerHTML = sentSorted.map((t,i) => {
-    const color = GameEngine.statColor('sentiment', t.sentiment);
-    const label = t.sentiment >= 70 ? 'Beloved' : t.sentiment >= 50 ? 'Positive' : t.sentiment >= 35 ? 'Mixed' : 'Hostile';
-    return `<div class="stat-move">
-      <span>${i+1}. ${t.brandName}</span>
-      <span style="color:${color};font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600">${t.sentiment} — ${label}</span>
-    </div>`;
+  var sentSorted = sorted.slice().sort(function(a,b) { return b.sentiment - a.sentiment; });
+  document.getElementById('sentimentReport').innerHTML = sentSorted.map(function(t, i) {
+    var color = GameEngine.statColor('sentiment', t.sentiment);
+    var label = t.sentiment >= 70 ? 'Beloved' : t.sentiment >= 50 ? 'Positive' : t.sentiment >= 35 ? 'Mixed' : 'Hostile';
+    return '<div class="stat-move"><span>' + (i+1) + '. ' + t.brandName + '</span>' +
+      '<span style="color:' + color + ';font-size:10px;font-weight:600">' + t.sentiment + ' — ' + label + '</span></div>';
   }).join('');
 
   // Phase outlook
@@ -341,131 +340,116 @@ function render() {
 
   // Bottom strip
   document.getElementById('strip-leader').textContent =
-    `${leader.brandName} holds the top position with a Market Score of ${leader.score}. ` +
-    `${leader.industry||''} · ${leader.targetDemo||''}.`;
+    leader.brandName + ' holds the top position with a Market Score of ' + leader.score + '. ' + (leader.industry||'') + ' · ' + (leader.targetDemo||'') + '.';
 
-  const biggest = [...sorted].sort((a,b) =>
-    (b.stockHistory?.length||0) - (a.stockHistory?.length||0))[0];
-  const improved = sorted[Math.floor(sorted.length * 0.4)] || sorted[0];
+  var improved = sorted[Math.floor(sorted.length * 0.4)] || sorted[0];
   document.getElementById('strip-improved').textContent =
-    `Watch ${improved.brandName} — their trajectory this phase suggests a potential move up the leaderboard before the week closes.`;
+    'Watch ' + improved.brandName + ' — their trajectory this phase suggests a potential move up the leaderboard before the week closes.';
 
-  const atRisk = sorted.filter(t => (t.stats?.risk||0) > 55 || (t.stats?.sentiment||50) < 30);
+  var atRisk = sorted.filter(function(t) { return (t.stats && t.stats.risk > 55) || (t.stats && t.stats.sentiment < 30); });
   document.getElementById('strip-risk').textContent = atRisk.length
-    ? atRisk.map(t => `${t.brandName} (Risk: ${t.stats?.risk||0}, Sentiment: ${t.stats?.sentiment||50})`).join('; ')
+    ? atRisk.map(function(t) { return t.brandName + ' (Risk: ' + (t.stats.risk||0) + ', Sentiment: ' + (t.stats.sentiment||50) + ')'; }).join('; ')
     : 'No brands in critical condition this week.';
 
-  // Teacher note from Firebase
-  db.ref('season/weeklyNote').once('value', snap => {
-    const note = snap.val();
+  db.ref('season/weeklyNote').once('value', function(snap) {
+    var note = snap.val();
     if (note) document.getElementById('strip-note').textContent = note;
   });
-  } catch(e) {
-    document.getElementById('mainHeadline').textContent = 'Render error: ' + e.message;
-    document.getElementById('mainDeck').textContent = 'Check browser console for details.';
-    console.error('Weekly recap render error:', e);
-  }
 }
-// ═══════════════════════════════════════════════════════════
-// AI MARKET COMMENTARY
-// ═══════════════════════════════════════════════════════════
+
 async function generateAICommentary() {
-  const week    = seasonData.currentWeek || 1;
-  const phase   = GameEngine.getPhase(week);
-  const vol     = seasonData.volatility || 40;
-  const teams   = Object.entries(teamsData);
+  var week  = seasonData.currentWeek || 1;
+  var phase = GameEngine.getPhase(week);
+  var vol   = seasonData.volatility || 40;
+  var teams = Object.entries(teamsData);
 
-  if (!teams.length) {
-    alert('No teams in the simulation yet.');
-    return;
-  }
+  if (!teams.length) { alert('No teams in the simulation yet.'); return; }
 
-  const section = document.getElementById('aiCommentarySection');
-  const loading = document.getElementById('aiLoading');
-  const col1    = document.getElementById('aiCol1');
-  const col2    = document.getElementById('aiCol2');
+  var section = document.getElementById('aiCommentarySection');
+  var loading = document.getElementById('aiLoading');
+  var col1    = document.getElementById('aiCol1');
+  var col2    = document.getElementById('aiCol2');
 
   section.style.display = 'block';
   loading.style.display = 'block';
   col1.textContent = '';
   col2.textContent = '';
 
-  // Build market snapshot for the prompt
-  const sorted = teams.map(([id, t]) => ({
-    name:      t.brandName,
-    industry:  t.industry || '',
-    demo:      t.targetDemo || '',
-    members:   t.members || '',
-    score:     GameEngine.calcMarketScore(t.stats || {}),
-    stats:     t.stats || {},
-    rivalName: t.rivalId && teamsData[t.rivalId] ? teamsData[t.rivalId].brandName : null,
-    recentEvents: Object.values(t.eventLog || {})
-      .sort((a,b) => b.timestamp - a.timestamp)
-      .slice(0, 2)
-      .map(e => e.cardTitle)
-      .join(', ') || 'none',
-  })).sort((a,b) => b.score - a.score);
+  var sorted = teams.map(function(e) {
+    var id = e[0]; var t = e[1];
+    var recentEvents = Object.values(t.eventLog || {})
+      .sort(function(a,b) { return b.timestamp - a.timestamp; })
+      .slice(0,2).map(function(ev) { return ev.cardTitle; }).join(', ') || 'none';
+    return {
+      name:     t.brandName,
+      industry: t.industry || '',
+      demo:     t.targetDemo || '',
+      members:  t.members || '',
+      score:    GameEngine.calcMarketScore(t.stats || {}),
+      stats:    t.stats || {},
+      rivalName: (t.rivalId && teamsData[t.rivalId]) ? teamsData[t.rivalId].brandName : null,
+      recentEvents: recentEvents,
+    };
+  }).sort(function(a,b) { return b.score - a.score; });
 
-  const marketSnapshot = sorted.map((t,i) =>
-    `#${i+1} ${t.name} (${t.industry}, targeting ${t.demo}): ` +
-    `Market Score ${t.score}, Budget ${t.stats.budget||0}, Demand ${t.stats.demand||0}, ` +
-    `Reputation ${t.stats.reputation||0}, Innovation ${t.stats.innovation||0}, ` +
-    `Risk ${t.stats.risk||0}, Sentiment ${t.stats.sentiment||50}` +
-    (t.rivalName ? `, Rival: ${t.rivalName}` : '') +
-    (t.recentEvents !== 'none' ? `, Recent events: ${t.recentEvents}` : '') +
-    (t.members ? `, Team: ${t.members}` : '')
-  ).join('
-');
+  var marketSnapshot = sorted.map(function(t, i) {
+    var line = '#' + (i+1) + ' ' + t.name + ' (' + t.industry + ', targeting ' + t.demo + '): ' +
+      'Market Score ' + t.score + ', Budget ' + (t.stats.budget||0) + ', Demand ' + (t.stats.demand||0) + ', ' +
+      'Reputation ' + (t.stats.reputation||0) + ', Innovation ' + (t.stats.innovation||0) + ', ' +
+      'Risk ' + (t.stats.risk||0) + ', Sentiment ' + (t.stats.sentiment||50);
+    if (t.rivalName) line += ', Rival: ' + t.rivalName;
+    if (t.recentEvents !== 'none') line += ', Recent events: ' + t.recentEvents;
+    if (t.members) line += ', Team: ' + t.members;
+    return line;
+  }).join('\n');
 
-  const prompt = `You are a sharp, opinionated market analyst writing the commentary section of a weekly market report for a high school business simulation called BrandOps. Students are managing competing brands across industries.
 
-Current market conditions:
-- Week ${week} of 18
-- Phase: ${phase.name} (${phase.emoji})
-- Market Volatility: ${vol}/100 (${vol > 70 ? 'CHAOS' : vol > 40 ? 'Active' : 'Stable'})
-- Number of competing brands: ${sorted.length}
+  var volLabel = vol > 70 ? 'CHAOS' : vol > 40 ? 'Active' : 'Stable';
+  var promptText = [
+    'You are a sharp, opinionated market analyst writing the commentary section of a weekly market report for a high school business simulation called BrandOps. Students are managing competing brands across industries.',
+    '',
+    'Current market conditions:',
+    '- Week ' + week + ' of 18',
+    '- Phase: ' + phase.name + ' (' + phase.emoji + ')',
+    '- Market Volatility: ' + vol + '/100 (' + volLabel + ')',
+    '- Number of competing brands: ' + sorted.length,
+    '',
+    'Current standings and stats:',
+    marketSnapshot,
+    '',
+    'Write exactly two focused paragraphs of market analyst commentary (no headers, no bullet points, just prose). Each paragraph should be 4-6 sentences.',
+    '',
+    'Paragraph 1: Analyze the current competitive landscape — who is leading and why, what stat patterns explain the standings, any surprising moves or concerning trajectories. Be specific about brand names and numbers.',
+    '',
+    'Paragraph 2: Focus on the current phase (' + phase.name + ') and what it demands strategically. Identify which brands are best positioned, which are most at risk, and what the next two weeks likely hold. End with one sharp, specific observation that a real analyst would make.',
+    '',
+    'Write in the voice of a confident, slightly irreverent financial analyst — authoritative but not dry. Use the brand names and industry details naturally. Do not mention that this is a simulation or that the brands are fictional.'
+  ].join('\n');
 
-Current standings and stats:
-${marketSnapshot}
-
-Write exactly two focused paragraphs of market analyst commentary (no headers, no bullet points, just prose). Each paragraph should be 4-6 sentences.
-
-Paragraph 1: Analyze the current competitive landscape — who is leading and why, what stat patterns explain the standings, any surprising moves or concerning trajectories. Be specific about brand names and numbers.
-
-Paragraph 2: Focus on the current phase (${phase.name}) and what it demands strategically. Identify which brands are best positioned, which are most at risk, and what the next two weeks likely hold. End with one sharp, specific observation that a real analyst would make.
-
-Write in the voice of a confident, slightly irreverent financial analyst — authoritative but not dry. Use the brand names and industry details naturally. Do not mention that this is a simulation or that the brands are fictional.`;
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    try {
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 600,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user', content: promptText }],
       }),
     });
-
-    const data = await response.json();
-    const text = data.content?.map(b => b.text || '').join('').trim();
-
+    var data = await response.json();
+    var text = (data.content || []).map(function(b) { return b.text || ''; }).join('').trim();
     if (!text) throw new Error('No content returned');
-
-    // Split into two paragraphs
-    const paras = text.split(/\n\n+/).filter(p => p.trim().length > 40);
+    var paras = text.split(/\n\n+/).filter(function(p) { return p.trim().length > 40; });
     loading.style.display = 'none';
     col1.textContent = paras[0] || text;
     col2.textContent = paras[1] || '';
-
-  } catch (err) {
+  } catch(err) {
     loading.style.display = 'none';
     col1.style.fontStyle = 'italic';
     col1.style.color = '#9d876a';
-    col1.textContent = 'Commentary unavailable — check your connection and try again. (' + err.message + ')';
+    col1.textContent = 'Commentary unavailable — ' + err.message;
   }
 }
-
 </script>
 </body>
 </html>
