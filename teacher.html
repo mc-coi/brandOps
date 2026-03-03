@@ -289,7 +289,7 @@ textarea { resize: vertical; min-height: 60px; }
     <div class="login-title">Brand<span>Ops</span></div>
     <div class="login-sub">Teacher Console · Restricted Access</div>
     <input type="password" id="pwInput" placeholder="Enter teacher password" onkeydown="if(event.key==='Enter') doLogin()">
-    <button class="btn" onclick="doLogin()">Access Console</button>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Access Console</button>
     <div class="error-msg" id="loginError"></div>
   </div>
 </div>
@@ -544,6 +544,15 @@ textarea { resize: vertical; min-height: 60px; }
         </div>
 
         <div class="card">
+          <div class="card-title">Change Teacher Password</div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="password" id="newPwInput" placeholder="New password" style="flex:1">
+            <button class="btn small" style="width:auto" onclick="changePassword()">Update</button>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px">Password is stored in Firebase — never in source code.</div>
+        </div>
+
+        <div class="card">
           <div class="card-title">Weekly Note (appears on Recap printout)</div>
           <textarea id="weeklyNoteInput" style="min-height:60px" placeholder="Optional note for this week — shown in the bottom strip of the Weekly Recap…"></textarea>
           <button class="btn small" style="width:auto;margin-top:4px" onclick="saveWeeklyNote()">Save Note</button>
@@ -670,24 +679,60 @@ textarea { resize: vertical; min-height: 60px; }
 <script>
 // ── Auth ──────────────────────────────────────────────────
 function doLogin() {
-  const pw = document.getElementById('pwInput').value;
-  if (pw === TEACHER_PASSWORD) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('appShell').style.display = 'block';
-    initApp();
-  } else {
-    document.getElementById('loginError').textContent = 'Incorrect password.';
-  }
+  const pw  = document.getElementById('pwInput').value.trim();
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  if (!pw) { err.textContent = 'Enter a password.'; return; }
+
+  err.textContent = '';
+  btn.textContent = 'Checking…';
+  btn.disabled = true;
+
+  // Check password stored in Firebase — never in source code
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const authDb = firebase.database();
+  authDb.ref('config/teacherPassword').once('value', snap => {
+    btn.textContent = 'Enter';
+    btn.disabled = false;
+    const stored = snap.val();
+    if (!stored) {
+      // No password set yet — first run, accept anything and save it
+      authDb.ref('config/teacherPassword').set(pw).then(() => {
+        err.style.color = 'var(--green)';
+        err.textContent = '✓ Password set. You are now logged in.';
+        setTimeout(() => {
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('appShell').style.display = 'block';
+          initApp(authDb);
+        }, 1200);
+      });
+    } else if (pw === stored) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appShell').style.display = 'block';
+      initApp(authDb);
+    } else {
+      err.style.color = '';
+      err.textContent = 'Incorrect password.';
+      document.getElementById('pwInput').value = '';
+      document.getElementById('pwInput').focus();
+    }
+  }, err => {
+    btn.textContent = 'Enter';
+    btn.disabled = false;
+    document.getElementById('loginError').textContent = 'Could not reach Firebase. Check your connection.';
+  });
 }
 
 // ── Firebase ──────────────────────────────────────────────
-firebase.initializeApp(FIREBASE_CONFIG);
-const db = firebase.database();
+// Firebase is initialised inside doLogin so we can check the password first.
+// initApp receives the already-initialised db reference.
+let db;
 let seasonData = {};
 let teamsData  = {};
 
 // ── Init ──────────────────────────────────────────────────
-function initApp() {
+function initApp(passedDb) {
+  db = passedDb || db;
   populateDeliverableDropdown();
 
   db.ref('season').on('value', snap => {
@@ -1256,6 +1301,15 @@ function testPhaseOverlay() {
   }).then(() => {
     showToast('🎭 Overlay fired — check student pages');
     setTimeout(() => db.ref('season/phaseTransition').remove(), 12000);
+  });
+}
+
+function changePassword() {
+  const newPw = document.getElementById('newPwInput').value.trim();
+  if (!newPw || newPw.length < 4) { showToast('Password must be at least 4 characters.', true); return; }
+  db.ref('config/teacherPassword').set(newPw).then(() => {
+    showToast('✓ Password updated.');
+    document.getElementById('newPwInput').value = '';
   });
 }
 

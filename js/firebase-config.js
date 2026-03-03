@@ -8,7 +8,7 @@ const FIREBASE_CONFIG = {
   appId: "1:1053444309734:web:00c5a17748d1d0c8613127"
 };
 
-const TEACHER_PASSWORD = "testMM";
+// Password is stored in Firebase at /config/teacherPassword
 
 const GAME_CONFIG = {
   maxWeeks: 18,
