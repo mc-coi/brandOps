@@ -1363,6 +1363,24 @@ function openModal(title, body, onConfirm) {
   document.getElementById('modalConfirmBtn').onclick = () => { onConfirm(); closeModal(); };
   document.getElementById('confirmModal').classList.add('open');
 }
+// ── Copy brand link ───────────────────────────────────────────
+function copyBrandLink(teamId, brandName) {
+  const url = window.location.origin + window.location.pathname.replace('teacher.html', '') + 'brand.html?team=' + teamId;
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('🔗 Link copied for ' + brandName);
+  }).catch(() => {
+    // Fallback for browsers that block clipboard without HTTPS
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.position = 'fixed';
+    ta.style.opacity  = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('🔗 Link copied for ' + brandName);
+  });
+}
 // ── Compare ───────────────────────────────────────────────────
 function openCompare(teamAId) {
   // Build a quick picker for team B
