@@ -927,7 +927,7 @@ function refreshTeamUI() {
         </div>
         <div class="team-actions">
           <button class="btn small secondary" onclick="printNewspaper('${id}')">🗞️ Print</button>
-          <button class="btn small secondary" onclick="window.open('brand.html?team=${id}','_blank')">📱 Brand Page</button>
+          <button class="btn small secondary" onclick="window.open('teacherbrand.html?team=${id}','_blank')">📱 Brand Page</button>
           <button class="btn small secondary" onclick="copyBrandLink('${id}', '${team.brandName}')" title="Copy brand page link">🔗 Copy Link</button>
           <button class="btn small secondary" onclick="openCompare('${id}')" title="Head-to-head compare">⚔️ Compare</button>
           <button class="btn small danger" onclick="confirmDeleteTeam('${id}', '${team.brandName}')">✕</button>
@@ -1365,7 +1365,7 @@ function openModal(title, body, onConfirm) {
 }
 // ── Copy brand link ───────────────────────────────────────────
 function copyBrandLink(teamId, brandName) {
-  const url = window.location.origin + window.location.pathname.replace('teacher.html', '') + 'brand.html?team=' + teamId;
+  const url = window.location.origin + window.location.pathname.replace('teacher.html', '') + 'teacherbrand.html?team=' + teamId;
   navigator.clipboard.writeText(url).then(() => {
     showToast('🔗 Link copied for ' + brandName);
   }).catch(() => {
