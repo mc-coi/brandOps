@@ -1365,7 +1365,8 @@ function openModal(title, body, onConfirm) {
 }
 // ── Copy brand link ───────────────────────────────────────────
 function copyBrandLink(teamId, brandName) {
-  const url = window.location.origin + window.location.pathname.replace('teacher.html', '') + 'teacherbrand.html?team=' + teamId;
+  const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+  const url = base + 'teacherbrand.html?team=' + teamId;
   navigator.clipboard.writeText(url).then(() => {
     showToast('🔗 Link copied for ' + brandName);
   }).catch(() => {
