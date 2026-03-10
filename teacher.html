@@ -1615,13 +1615,17 @@ refreshTeamSelects = function() {
   }
 };
 
-// Listen to social posts in Firebase
-db.ref('social/posts').on('value', function(snap) {
-  _socialPosts = snap.val() || {};
-  renderSocialPostList();
-  document.getElementById('socialPostCountBadge').textContent =
-    '(' + Object.keys(_socialPosts).length + ')';
-});
+// Attach the social posts listener after login (db isn't set until initApp runs)
+var _origInitApp = initApp;
+initApp = function(passedDb) {
+  _origInitApp(passedDb);
+  db.ref('social/posts').on('value', function(snap) {
+    _socialPosts = snap.val() || {};
+    renderSocialPostList();
+    var badge = document.getElementById('socialPostCountBadge');
+    if (badge) badge.textContent = '(' + Object.keys(_socialPosts).length + ')';
+  });
+};
 
 function selectAcctType(type) {
   _socialAcctType = type;
