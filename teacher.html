@@ -699,6 +699,13 @@ textarea { resize: vertical; min-height: 60px; }
                   style="width:100%;padding:10px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:14px;resize:vertical;line-height:1.5"></textarea>
               </div>
 
+              <div>
+                <label style="font-size:11px;color:var(--text2);font-family:var(--mono);display:block;margin-bottom:6px">IMAGE URL (optional)</label>
+                <input type="url" id="socialImageUrl" placeholder="https://example.com/image.jpg"
+                  oninput="updateSocialPreview()"
+                  style="width:100%;padding:8px 10px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:12px">
+              </div>
+
               <div style="display:flex;gap:8px">
                 <button class="btn small secondary" onclick="generatePost()" style="flex:1">✨ Generate from Stats</button>
                 <button class="btn small success"   onclick="publishPost()"  style="flex:1">📤 Post to BuzzNet</button>
@@ -714,17 +721,34 @@ textarea { resize: vertical; min-height: 60px; }
                     <div id="prevHandle" style="font-family:var(--mono);font-size:11px;color:var(--text2)"></div>
                   </div>
                 </div>
-                <div id="prevText" style="font-size:14px;line-height:1.5;color:var(--text)"></div>
+                <div id="prevText" style="font-size:14px;line-height:1.5;color:var(--text);margin-bottom:8px"></div>
+                <img id="prevImage" src="" alt="" style="display:none;width:100%;max-height:140px;object-fit:cover;border-radius:6px" onerror="this.style.display='none'">
               </div>
             </div>
           </div>
 
-          <!-- Post history -->
-          <div class="card" style="max-height:600px;overflow:hidden;display:flex;flex-direction:column">
-            <div class="card-title" style="flex-shrink:0">Recent Posts <span id="socialPostCountBadge" style="font-size:11px;color:var(--text2);font-weight:400;font-family:var(--mono)"></span></div>
-            <div id="socialPostList" style="flex:1;overflow-y:auto;margin-top:12px;display:flex;flex-direction:column;gap:8px">
-              <div style="color:var(--muted);font-size:12px;font-family:var(--mono)">No posts yet.</div>
+          <!-- Right column: quota + post history -->
+          <div style="display:flex;flex-direction:column;gap:16px">
+
+            <!-- Weekly quota checklist -->
+            <div class="card">
+              <div class="card-title">Weekly Post Quota
+                <span style="font-size:11px;color:var(--text2);font-weight:400;font-family:var(--mono)" id="quotaWeekLabel"></span>
+              </div>
+              <div style="font-size:11px;color:var(--text2);font-family:var(--mono);margin:6px 0 12px">2 posts per team per week</div>
+              <div id="quotaChecklist" style="display:flex;flex-direction:column;gap:6px">
+                <div style="color:var(--muted);font-size:12px;font-family:var(--mono)">No teams yet.</div>
+              </div>
             </div>
+
+            <!-- Post history -->
+            <div class="card" style="max-height:420px;overflow:hidden;display:flex;flex-direction:column">
+              <div class="card-title" style="flex-shrink:0">Recent Posts <span id="socialPostCountBadge" style="font-size:11px;color:var(--text2);font-weight:400;font-family:var(--mono)"></span></div>
+              <div id="socialPostList" style="flex:1;overflow-y:auto;margin-top:12px;display:flex;flex-direction:column;gap:8px">
+                <div style="color:var(--muted);font-size:12px;font-family:var(--mono)">No posts yet.</div>
+              </div>
+            </div>
+
           </div>
 
         </div>
@@ -1622,9 +1646,17 @@ initApp = function(passedDb) {
   db.ref('social/posts').on('value', function(snap) {
     _socialPosts = snap.val() || {};
     renderSocialPostList();
+    renderQuotaChecklist();
     var badge = document.getElementById('socialPostCountBadge');
     if (badge) badge.textContent = '(' + Object.keys(_socialPosts).length + ')';
   });
+};
+
+// Re-render quota whenever season advances (week changes)
+var _origRefreshSeasonUI = refreshSeasonUI;
+refreshSeasonUI = function() {
+  _origRefreshSeasonUI();
+  renderQuotaChecklist();
 };
 
 function selectAcctType(type) {
@@ -1680,12 +1712,18 @@ function getSocialPersona(type, teamId) {
 }
 
 function updateSocialPreview() {
-  var text = (document.getElementById('socialPostText')?.value || '').trim();
-  var persona = getSocialPersona(_socialAcctType);
+  var text     = (document.getElementById('socialPostText')?.value || '').trim();
+  var imageUrl = (document.getElementById('socialImageUrl')?.value || '').trim();
+  var persona  = getSocialPersona(_socialAcctType);
   document.getElementById('prevAvatar').textContent = persona.avatar;
   document.getElementById('prevName').textContent   = persona.name;
   document.getElementById('prevHandle').textContent = persona.handle;
   document.getElementById('prevText').textContent   = text || '(no text yet)';
+  var img = document.getElementById('prevImage');
+  if (img) {
+    if (imageUrl) { img.src = imageUrl; img.style.display = 'block'; }
+    else          { img.style.display = 'none'; img.src = ''; }
+  }
   document.getElementById('socialPreview').style.display = 'block';
 }
 
@@ -1866,7 +1904,8 @@ function publishPost() {
     }
   }
 
-  var likes = Math.floor(Math.random() * 800) + 50;
+  var likes    = Math.floor(Math.random() * 800) + 50;
+  var imageUrl = (document.getElementById('socialImageUrl')?.value || '').trim();
 
   var post = {
     displayName:  persona.name,
@@ -1876,6 +1915,8 @@ function publishPost() {
     text:         text,
     teamId:       teamId  || null,
     teamTag:      team ? '#' + team.brandName.replace(/\s+/g,'') : null,
+    imageUrl:     imageUrl || null,
+    week:         seasonData.currentWeek || 1,
     likes:        likes,
     timestamp:    Date.now(),
   };
@@ -1883,10 +1924,60 @@ function publishPost() {
   db.ref('social/posts').push(post).then(function() {
     showToast('📣 Posted to BuzzNet!');
     document.getElementById('socialPostText').value = '';
+    document.getElementById('socialImageUrl').value = '';
     document.getElementById('socialPreview').style.display = 'none';
+    renderQuotaChecklist();
   }).catch(function(e) {
     showToast('Error: ' + e.message, true);
   });
+}
+
+function renderQuotaChecklist() {
+  var el = document.getElementById('quotaChecklist');
+  var weekLabel = document.getElementById('quotaWeekLabel');
+  if (!el) return;
+  var week  = seasonData.currentWeek || 1;
+  var teams = Object.entries(teamsData);
+  if (weekLabel) weekLabel.textContent = '— Week ' + week;
+
+  if (!teams.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:12px;font-family:var(--mono)">No teams yet.</div>';
+    return;
+  }
+
+  // Count posts for this week linked to each team
+  var counts = {};
+  Object.values(_socialPosts).forEach(function(p) {
+    if (p.teamId && p.week === week) {
+      counts[p.teamId] = (counts[p.teamId] || 0) + 1;
+    }
+  });
+
+  var QUOTA = 2;
+  var allDone = teams.every(function(e) { return (counts[e[0]] || 0) >= QUOTA; });
+
+  el.innerHTML = teams.map(function(e) {
+    var id    = e[0];
+    var team  = e[1];
+    var count = counts[id] || 0;
+    var done  = count >= QUOTA;
+    var color = done ? 'var(--green)' : count > 0 ? 'var(--amber)' : 'var(--muted)';
+    var dots  = Array.from({ length: QUOTA }, function(_, i) {
+      return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;background:' +
+        (i < count ? color : 'var(--bg3)') + ';border:1px solid ' + color + '"></span>';
+    }).join('');
+    return '<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--bg3);border-radius:6px;border:1px solid ' +
+      (done ? 'rgba(34,197,94,0.2)' : 'var(--border)') + '">' +
+      '<div style="flex:1;font-size:13px;font-weight:500">' + esc(team.brandName || '?') + '</div>' +
+      '<div>' + dots + '</div>' +
+      '<div style="font-family:var(--mono);font-size:11px;color:' + color + '">' + count + '/' + QUOTA + '</div>' +
+      (done ? '<span style="font-size:10px">✓</span>' : '') +
+    '</div>';
+  }).join('');
+
+  if (allDone) {
+    el.innerHTML += '<div style="margin-top:8px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--green)">✓ All teams at quota for Week ' + week + '</div>';
+  }
 }
 
 function renderSocialPostList() {

@@ -367,6 +367,10 @@ function buildPostCard(post, featured = false) {
   const rts   = Math.floor(likes * 0.3);
   const ago   = timeAgo(post.timestamp);
 
+  const imgHtml = post.imageUrl
+    ? `<img src="${esc(post.imageUrl)}" alt="" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:10px;display:block" onerror="this.style.display='none'">`
+    : '';
+
   return `<div class="post-card${featured ? ' featured' : ''}">
     <div class="post-header">
       <div class="post-avatar" style="background:${avatarBg(post.accountType)}">${post.avatar || '👤'}</div>
@@ -377,6 +381,7 @@ function buildPostCard(post, featured = false) {
       <div class="post-type-badge ${badge.cls}">${badge.label}</div>
     </div>
     <div class="post-text">${text}</div>
+    ${imgHtml}
     <div class="post-footer">
       <div class="post-actions">
         <div class="post-action">❤️ <span>${likes.toLocaleString()}</span></div>
