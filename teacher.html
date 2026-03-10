@@ -323,6 +323,7 @@ textarea { resize: vertical; min-height: 60px; }
       <div class="nav-item" data-panel="rivals">⚔️ Rivals</div>
       <div class="nav-item" data-panel="journal">📓 Journal</div>
       <div class="nav-item" data-panel="letters">📬 Letters</div>
+      <div class="nav-item" data-panel="social">📣 Social</div>
       <div class="nav-item" data-panel="season">⚙️ Season</div>
     </nav>
 
@@ -653,6 +654,83 @@ textarea { resize: vertical; min-height: 60px; }
         </div>
       </div>
 
+      <!-- ══ SOCIAL FEED PANEL ══════════════════════════════════ -->
+      <div class="panel" id="panel-social">
+        <div class="panel-title">Social Feed</div>
+        <div class="panel-sub">Post as fake accounts · <a href="social.html" target="_blank" style="color:var(--amber);text-decoration:none">Open BuzzNet feed ↗</a></div>
+
+        <div class="grid-2" style="gap:20px;align-items:start">
+
+          <!-- Composer -->
+          <div class="card">
+            <div class="card-title">Compose Post</div>
+
+            <div style="display:flex;flex-direction:column;gap:14px;margin-top:12px">
+
+              <div>
+                <label style="font-size:11px;color:var(--text2);font-family:var(--mono);display:block;margin-bottom:6px">ACCOUNT TYPE</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap" id="acctTypePicker">
+                  <button class="btn small secondary acct-btn active" data-type="public"     onclick="selectAcctType('public')">🧑 Public</button>
+                  <button class="btn small secondary acct-btn"        data-type="media"      onclick="selectAcctType('media')">📰 Media</button>
+                  <button class="btn small secondary acct-btn"        data-type="rival"      onclick="selectAcctType('rival')">⚔️ Rival</button>
+                  <button class="btn small secondary acct-btn"        data-type="influencer" onclick="selectAcctType('influencer')">✨ Influencer</button>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:12px">
+                <div style="flex:1">
+                  <label style="font-size:11px;color:var(--text2);font-family:var(--mono);display:block;margin-bottom:6px">ABOUT TEAM (optional)</label>
+                  <select id="socialTeamTag" style="width:100%;padding:8px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:12px">
+                    <option value="">— No specific team —</option>
+                  </select>
+                </div>
+                <div style="flex:1;display:none" id="rivalTargetWrap">
+                  <label style="font-size:11px;color:var(--text2);font-family:var(--mono);display:block;margin-bottom:6px">RIVAL POSTING AS</label>
+                  <select id="rivalPosterSelect" style="width:100%;padding:8px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:12px">
+                    <option value="">— Pick posting brand —</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style="font-size:11px;color:var(--text2);font-family:var(--mono);display:block;margin-bottom:6px">POST TEXT</label>
+                <textarea id="socialPostText" rows="4"
+                  placeholder="Write a post, or hit Generate to create one from the team's stats..."
+                  style="width:100%;padding:10px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:14px;resize:vertical;line-height:1.5"></textarea>
+              </div>
+
+              <div style="display:flex;gap:8px">
+                <button class="btn small secondary" onclick="generatePost()" style="flex:1">✨ Generate from Stats</button>
+                <button class="btn small success"   onclick="publishPost()"  style="flex:1">📤 Post to BuzzNet</button>
+              </div>
+
+              <!-- Preview -->
+              <div id="socialPreview" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
+                <div style="font-size:10px;color:var(--text2);font-family:var(--mono);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Preview</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                  <div id="prevAvatar" style="font-size:20px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--bg3);border-radius:50%;border:1px solid var(--border)">👤</div>
+                  <div>
+                    <div id="prevName"   style="font-weight:600;font-size:13px"></div>
+                    <div id="prevHandle" style="font-family:var(--mono);font-size:11px;color:var(--text2)"></div>
+                  </div>
+                </div>
+                <div id="prevText" style="font-size:14px;line-height:1.5;color:var(--text)"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Post history -->
+          <div class="card" style="max-height:600px;overflow:hidden;display:flex;flex-direction:column">
+            <div class="card-title" style="flex-shrink:0">Recent Posts <span id="socialPostCountBadge" style="font-size:11px;color:var(--text2);font-weight:400;font-family:var(--mono)"></span></div>
+            <div id="socialPostList" style="flex:1;overflow-y:auto;margin-top:12px;display:flex;flex-direction:column;gap:8px">
+              <div style="color:var(--muted);font-size:12px;font-family:var(--mono)">No posts yet.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <!-- ══ END SOCIAL PANEL ══════════════════════════════════ -->
+
     </div><!-- /content -->
   </div><!-- /console-layout -->
 </div><!-- /appShell -->
@@ -861,7 +939,10 @@ function refreshTeamSelects() {
   const options = teams.map(([id, t]) => `<option value="${id}">${t.brandName}</option>`).join('');
   ['eventTeamSelect','scoreTeamSelect','overrideTeam'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = `<option value="">— Choose a team —</option>` + options;
+    if (!el) return;
+    const prev = el.value;
+    el.innerHTML = `<option value="">— Choose a team —</option>` + options;
+    if (prev && teamsData[prev]) el.value = prev;
   });
 }
 
@@ -1267,7 +1348,7 @@ function openCompare(teamAId) {
     `<option value="${id}">${t.brandName}</option>`
   ).join('');
   const sel = `<select id="compareBSelect" style="padding:8px;font-family:var(--mono);font-size:13px;background:#1e1e28;color:#e8e3d8;border:1px solid #333;width:100%;margin-top:8px">${opts}</select>`;
-  showConfirmModal(
+  openModal(
     'Compare vs…',
     `Pick a rival to compare against ${teamsData[teamAId]?.brandName}:${sel}`,
     () => {
@@ -1485,7 +1566,10 @@ refreshTeamSelects = function() {
     teams.map(function(e) { return '<option value="' + e[0] + '">' + (e[1].brandName||'?') + '</option>'; }).join('');
   ['rivalA','rivalB','journalTeamSelect','letterTeamSelect'].forEach(function(id) {
     var el = document.getElementById(id);
-    if (el) el.innerHTML = opts.replace('— Choose a team —', id.startsWith('rival') ? '— Choose brand —' : '— Choose a team —');
+    if (!el) return;
+    var prev = el.value;
+    el.innerHTML = opts.replace('— Choose a team —', id.startsWith('rival') ? '— Choose brand —' : '— Choose a team —');
+    if (prev && teamsData[prev]) el.value = prev;
   });
   renderRivalList();
   renderJournalList();
@@ -1498,6 +1582,361 @@ refreshTeamSelects = function() {
 // ═══════════════════════════════════════════════════════════
 // Sentiment is included automatically in the stat override fields
 // since it's now part of the stats object in each team.
+
+// ═══════════════════════════════════════════════════════════
+// SOCIAL FEED
+// ═══════════════════════════════════════════════════════════
+var _socialAcctType  = 'public';
+var _socialPosts     = {};
+
+// Hook into refreshTeamSelects to populate social selects
+var _origRefreshForSocial = refreshTeamSelects;
+refreshTeamSelects = function() {
+  _origRefreshForSocial();
+  var teams = Object.entries(teamsData);
+  var baseOpt = '<option value="">— No specific team —</option>';
+  var opts = baseOpt + teams.map(function(e) {
+    return '<option value="' + e[0] + '">' + (e[1].brandName || '?') + '</option>';
+  }).join('');
+  var tagEl = document.getElementById('socialTeamTag');
+  var rivalEl = document.getElementById('rivalPosterSelect');
+  if (tagEl) {
+    var prevTag = tagEl.value;
+    tagEl.innerHTML = opts;
+    if (prevTag && teamsData[prevTag]) tagEl.value = prevTag;
+  }
+  if (rivalEl) {
+    var prevRival = rivalEl.value;
+    rivalEl.innerHTML = '<option value="">— Pick posting brand —</option>' +
+      teams.map(function(e) {
+        return '<option value="' + e[0] + '">' + (e[1].brandName || '?') + '</option>';
+      }).join('');
+    if (prevRival && teamsData[prevRival]) rivalEl.value = prevRival;
+  }
+};
+
+// Listen to social posts in Firebase
+db.ref('social/posts').on('value', function(snap) {
+  _socialPosts = snap.val() || {};
+  renderSocialPostList();
+  document.getElementById('socialPostCountBadge').textContent =
+    '(' + Object.keys(_socialPosts).length + ')';
+});
+
+function selectAcctType(type) {
+  _socialAcctType = type;
+  document.querySelectorAll('.acct-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.type === type);
+    b.style.background  = b.dataset.type === type ? 'var(--amber)' : '';
+    b.style.color       = b.dataset.type === type ? '#000' : '';
+    b.style.borderColor = b.dataset.type === type ? 'var(--amber)' : '';
+  });
+  var rivalWrap = document.getElementById('rivalTargetWrap');
+  if (rivalWrap) rivalWrap.style.display = type === 'rival' ? 'block' : 'none';
+  updateSocialPreview();
+}
+
+function getSocialPersona(type, teamId) {
+  // Deterministic-ish personas per type
+  var PUBLIC_PERSONAS = [
+    { name: 'Sarah K.',         handle: '@sarahk_shopper',   avatar: '🛍️' },
+    { name: 'Marcus D.',        handle: '@marcusd92',         avatar: '👨' },
+    { name: 'Priya L.',         handle: '@priya.lives',       avatar: '🧕' },
+    { name: 'Jordan T.',        handle: '@jordanT_real',      avatar: '🧢' },
+    { name: 'frustrated_buyer', handle: '@anon_consumer88',   avatar: '😤' },
+    { name: 'TrustPilot User',  handle: '@tpuser4821',        avatar: '⭐' },
+  ];
+  var MEDIA_PERSONAS = [
+    { name: 'BrandBeat Weekly', handle: '@BrandBeatWeekly',  avatar: '📰' },
+    { name: 'Market Insider',   handle: '@MktInsiderNews',   avatar: '📊' },
+    { name: 'AdWeek Report',    handle: '@AdWeekReport',     avatar: '📣' },
+    { name: 'Consumer Watch',   handle: '@ConsumerWatchHQ',  avatar: '🔍' },
+    { name: 'The Brand Lab',    handle: '@TheBrandLab',      avatar: '🧪' },
+  ];
+  var INFLUENCER_PERSONAS = [
+    { name: 'Mia Glows Up',     handle: '@mia.glowsup',      avatar: '💅' },
+    { name: 'TechDropKing',     handle: '@techdropking',      avatar: '👑' },
+    { name: 'Everyday Alexis',  handle: '@everydayalexis',   avatar: '✨' },
+    { name: 'Jake Unfiltered',  handle: '@jake_unfiltered',  avatar: '🎥' },
+    { name: 'Nomad + Brand',    handle: '@nomad_and_brand',  avatar: '🌍' },
+  ];
+
+  if (type === 'rival') {
+    var rivalId = document.getElementById('rivalPosterSelect')
+                    ? document.getElementById('rivalPosterSelect').value : '';
+    var t = teamsData[rivalId];
+    if (t) return { name: t.brandName, handle: '@' + t.brandName.replace(/\s+/g,'') + 'Official', avatar: '🏢' };
+    return { name: 'Rival Brand', handle: '@rivalofficial', avatar: '🏢' };
+  }
+
+  var arr = type === 'media' ? MEDIA_PERSONAS :
+            type === 'influencer' ? INFLUENCER_PERSONAS : PUBLIC_PERSONAS;
+  // Pick semi-randomly based on time so it varies each Generate
+  return arr[Math.floor(Date.now() / 5000) % arr.length];
+}
+
+function updateSocialPreview() {
+  var text = (document.getElementById('socialPostText')?.value || '').trim();
+  var persona = getSocialPersona(_socialAcctType);
+  document.getElementById('prevAvatar').textContent = persona.avatar;
+  document.getElementById('prevName').textContent   = persona.name;
+  document.getElementById('prevHandle').textContent = persona.handle;
+  document.getElementById('prevText').textContent   = text || '(no text yet)';
+  document.getElementById('socialPreview').style.display = 'block';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var ta = document.getElementById('socialPostText');
+  if (ta) ta.addEventListener('input', updateSocialPreview);
+});
+
+// ── Generate post from team stats ──────────────────────────
+var TEMPLATES = {
+  public: {
+    highSentiment:    [
+      "just got my {brand} order and WOW. the quality is actually insane 😍 I'm a convert",
+      "can't stop recommending {brand} to literally everyone. the hype is real this time",
+      "ok {brand} actually delivered. I was skeptical but they've completely won me over 👏",
+      "my whole friend group is now obsessed with {brand} and honestly it's their own fault for being this good",
+    ],
+    lowSentiment:     [
+      "sorry but {brand} really fumbled this one. canceling my order and I'm not coming back 😤",
+      "used to love {brand} but whatever they're doing lately... it's not it. the energy shifted",
+      "three bad experiences with {brand} in a row. at what point is that just who they are now?",
+      "what happened to {brand}?? they used to be so good. this feels like a totally different company",
+    ],
+    highReputation:   [
+      "showed my friends {brand}'s campaign and everyone lost it. this brand just gets it",
+      "{brand} is literally the only brand I trust right now. they've never let me down",
+      "every single {brand} ad makes me want to be a better person lol. how?",
+    ],
+    lowReputation:    [
+      "{brand} is getting roasted in the group chat rn and honestly I can't defend them",
+      "respectfully, {brand} needs to hire a new creative team immediately. this is rough",
+      "my sister just asked 'wait is {brand} still a thing?' and honestly... fair question",
+    ],
+    highRisk:         [
+      "something feels off about {brand} lately. can't put my finger on it but the vibe shifted",
+      "idk why but I feel like {brand} is about to do something wild. watching closely 👀",
+    ],
+    lowBudget:        [
+      "the quality at {brand} has really gone downhill. feels like they're cutting corners everywhere",
+      "{brand} products feel noticeably cheaper than last year. hoping this is temporary",
+    ],
+    neutral:          [
+      "saw {brand}'s latest thing today. not bad, not great. just... fine I guess",
+      "{brand} is so interesting to watch. never know what they're going to do next",
+      "genuinely curious where {brand} goes from here. they're at a crossroads",
+    ],
+  },
+  media: {
+    highSentiment:    [
+      "BREAKING: {brand} consumer sentiment hits seasonal high — what's driving the surge? 📈",
+      "Is {brand} the brand to watch this season? Early indicators say yes.",
+      "{brand} achieves rare feat: high satisfaction scores AND strong demand metrics. Analysts take note.",
+    ],
+    lowSentiment:     [
+      "⚠️ {brand} faces growing backlash as public sentiment reaches critical levels. Crisis comms needed.",
+      "Sentiment collapse at {brand}: a warning for brands prioritizing growth over trust.",
+      "Industry experts question {brand}'s strategy as consumer confidence erodes. Recovery path unclear.",
+    ],
+    highReputation:   [
+      "{brand} named Brand of the Week — again. Is the competition even trying?",
+      "The {brand} playbook is being studied in boardrooms across the industry.",
+      "Rare consensus in adland: {brand}'s campaign is the benchmark this season.",
+    ],
+    lowReputation:    [
+      "⚠️ Industry watchdog flags {brand} for inconsistent brand messaging. Credibility at stake.",
+      "{brand}'s reputation metrics are trending in the wrong direction. Can they course-correct?",
+      "Sources close to {brand} describe internal confusion about brand identity. Not a good sign.",
+    ],
+    highRisk:         [
+      "Is {brand} playing with fire? Risk indicators flash red as bold bets pile up.",
+      "Analysts warn: {brand}'s aggressive strategy carries significant downside risk.",
+      "{brand} risk profile raises eyebrows on the trading floor. 'Reckless,' says one analyst.",
+    ],
+    lowBudget:        [
+      "{brand} reportedly tightening the belt. Budget constraints may limit Phase 2 ambitions.",
+      "Sources suggest {brand} is cash-strapped after early splurge. Rebrand may be off the table.",
+    ],
+    neutral:          [
+      "{brand} continues to hold steady — but 'steady' may not be enough in this market.",
+      "Midseason report: {brand} showing promise but faces key inflection point ahead.",
+      "Eyes on {brand} as the market enters its most competitive stretch.",
+    ],
+  },
+  rival: {
+    highSentiment:    [
+      "Congrats to {brand} on the good reviews, I guess. We'll see how that holds up 😏",
+      "Everyone's talking about {brand}? Bold. We'll let the numbers do the talking.",
+    ],
+    lowSentiment:     [
+      "We don't need to say anything. {brand} is doing the talking for us 🙂",
+      "Wow {brand} is having a rough one. We wish them well... genuinely 😇",
+      "Not going to pile on {brand}. We're too busy thriving to notice 💅",
+    ],
+    highReputation:   [
+      "{brand} is on a streak. We respect it. But streaks end 😌",
+      "The more {brand} succeeds, the better we look when we take the top spot.",
+    ],
+    lowReputation:    [
+      "Our thoughts are with the {brand} team during this difficult time. 🙏",
+      "We've been keeping quiet about {brand} but even we have to say... yikes.",
+    ],
+    neutral:          [
+      "{brand}: interesting. Us: thriving. Just vibes.",
+      "Watching {brand} figure it out is honestly educational. We're taking notes.",
+      "The market has room for everyone. But especially us.",
+    ],
+  },
+  influencer: {
+    highSentiment:    [
+      "AD: okay I KNOW I talk about brands a lot but {brand} is different. genuinely obsessed 💅 #gifted #brandpartner",
+      "no one asked but {brand} just earned a permanent spot in my life. the quality? immaculate.",
+      "my followers keep asking what I'm into rn and the honest answer is just... {brand}. don't ask me to explain it",
+    ],
+    lowSentiment:     [
+      "idk what happened to {brand} but it's giving 'lost the plot' and I can't pretend otherwise 😬",
+      "past me would be horrified but I'm officially going on a {brand} break. something's off.",
+      "I've been quiet about {brand} because I didn't want to be mean but the DMs are making me speak",
+    ],
+    highReputation:   [
+      "{brand} just sent the most thoughtful package and honestly my whole aesthetic just shifted",
+      "I'm not even being paid to say this: {brand} is living rent-free in my brain rn ✨",
+    ],
+    lowReputation:    [
+      "the {brand} partnership conversation didn't go anywhere and now I understand why",
+      "my audience has been asking about {brand} and I've been dodging it. make that make sense.",
+    ],
+    neutral:          [
+      "{brand} came up at dinner last night. no strong feelings either way but we're watching 👀",
+      "experimenting with {brand} rn. will report back. don't come for me if it flops",
+    ],
+  },
+};
+
+function generatePost() {
+  var teamId   = document.getElementById('socialTeamTag')?.value;
+  var team     = teamsData[teamId];
+  var stats    = team?.stats || {};
+  var brand    = team ? team.brandName : '{brand}';
+  var sent     = stats.sentiment  ?? 50;
+  var rep      = stats.reputation ?? 50;
+  var risk     = stats.risk       ?? 20;
+  var budget   = stats.budget     ?? 60;
+
+  var pool = TEMPLATES[_socialAcctType];
+  var candidates = [];
+
+  if (sent >= 65)      candidates = candidates.concat(pool.highSentiment || []);
+  else if (sent <= 30) candidates = candidates.concat(pool.lowSentiment  || []);
+  if (rep >= 65)       candidates = candidates.concat(pool.highReputation || []);
+  else if (rep <= 30)  candidates = candidates.concat(pool.lowReputation  || []);
+  if (risk >= 70)      candidates = candidates.concat(pool.highRisk       || []);
+  if (budget <= 20)    candidates = candidates.concat(pool.lowBudget      || []);
+  if (!candidates.length) candidates = pool.neutral || ['Keeping an eye on {brand}.'];
+
+  var tmpl = candidates[Math.floor(Math.random() * candidates.length)];
+  var text = tmpl.replace(/\{brand\}/g, brand);
+
+  document.getElementById('socialPostText').value = text;
+  updateSocialPreview();
+  showToast('✨ Generated post — edit if needed, then hit Post');
+}
+
+function publishPost() {
+  var text = (document.getElementById('socialPostText')?.value || '').trim();
+  if (!text) { showToast('Write or generate some text first.', true); return; }
+
+  var teamId  = document.getElementById('socialTeamTag')?.value || null;
+  var team    = teamsData[teamId];
+  var persona = getSocialPersona(_socialAcctType, teamId);
+
+  // Override name/handle for rival type
+  if (_socialAcctType === 'rival') {
+    var rivalId = document.getElementById('rivalPosterSelect')?.value;
+    var rt = teamsData[rivalId];
+    if (rt) {
+      persona.name   = rt.brandName;
+      persona.handle = '@' + rt.brandName.replace(/\s+/g,'') + 'Official';
+    }
+  }
+
+  var likes = Math.floor(Math.random() * 800) + 50;
+
+  var post = {
+    displayName:  persona.name,
+    handle:       persona.handle,
+    avatar:       persona.avatar,
+    accountType:  _socialAcctType,
+    text:         text,
+    teamId:       teamId  || null,
+    teamTag:      team ? '#' + team.brandName.replace(/\s+/g,'') : null,
+    likes:        likes,
+    timestamp:    Date.now(),
+  };
+
+  db.ref('social/posts').push(post).then(function() {
+    showToast('📣 Posted to BuzzNet!');
+    document.getElementById('socialPostText').value = '';
+    document.getElementById('socialPreview').style.display = 'none';
+  }).catch(function(e) {
+    showToast('Error: ' + e.message, true);
+  });
+}
+
+function renderSocialPostList() {
+  var el = document.getElementById('socialPostList');
+  if (!el) return;
+  var entries = Object.entries(_socialPosts)
+    .map(function(e) { return Object.assign({ _key: e[0] }, e[1]); })
+    .sort(function(a, b) { return b.timestamp - a.timestamp });
+
+  if (!entries.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:12px;font-family:var(--mono)">No posts yet.</div>';
+    return;
+  }
+
+  el.innerHTML = entries.map(function(p) {
+    var TYPE_COLORS = { public:'#60a5fa', media:'#c084fc', rival:'#f87171', influencer:'#f472b6' };
+    var color = TYPE_COLORS[p.accountType] || '#9d97a0';
+    var ago   = socialTimeAgo(p.timestamp);
+    return '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;position:relative">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+        '<span style="font-size:16px">' + (p.avatar||'👤') + '</span>' +
+        '<span style="font-weight:600;font-size:12px">' + esc(p.displayName||'') + '</span>' +
+        '<span style="font-family:var(--mono);font-size:10px;color:var(--text2)">' + esc(p.handle||'') + '</span>' +
+        '<span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:' + color + ';text-transform:uppercase">' + (p.accountType||'') + '</span>' +
+      '</div>' +
+      '<div style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:8px">' + esc((p.text||'').substring(0,120)) + ((p.text||'').length > 120 ? '…' : '') + '</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between">' +
+        '<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">' + ago + ' · ❤️ ' + (p.likes||0) + '</span>' +
+        '<button onclick="deleteSocialPost(\'' + p._key + '\')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 6px" title="Delete">✕</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function deleteSocialPost(key) {
+  db.ref('social/posts/' + key).remove().then(function() {
+    showToast('Post deleted.');
+  });
+}
+
+function socialTimeAgo(ts) {
+  if (!ts) return 'just now';
+  var diff = Date.now() - ts;
+  var m = Math.floor(diff / 60000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return m + 'm ago';
+  var h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 </script>
 </body>

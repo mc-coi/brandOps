@@ -179,6 +179,34 @@ body{display:flex;flex-direction:column;font-family:var(--sans);color:var(--text
 <!-- Dots -->
 <div class="dots" id="dots"></div>
 
+<!-- Social post toast (bottom-left) -->
+<div id="socialToast" style="
+  position:fixed;bottom:60px;left:28px;z-index:8000;
+  background:#13131c;border:1px solid #f5a62355;
+  border-radius:12px;padding:16px 18px;max-width:340px;
+  display:none;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6);
+  animation:stIn .4s ease;
+">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#f5a623">📣 BuzzNet</div>
+    <div style="width:6px;height:6px;border-radius:50%;background:#ef4444;animation:pulse 1.5s infinite;margin-left:auto"></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <div id="stAvatar" style="font-size:22px;width:38px;height:38px;background:#1e1e2a;border-radius:50%;border:1px solid #252535;display:flex;align-items:center;justify-content:center;flex-shrink:0">👤</div>
+    <div>
+      <div id="stName"   style="font-weight:600;font-size:13px;color:#e8e3d8"></div>
+      <div id="stHandle" style="font-family:var(--mono);font-size:11px;color:#6b7280"></div>
+    </div>
+  </div>
+  <div id="stText" style="font-size:14px;line-height:1.55;color:#e8e3d8"></div>
+  <div style="margin-top:10px;display:flex;gap:14px">
+    <span id="stLikes" style="font-family:var(--mono);font-size:11px;color:#6b7280"></span>
+    <span id="stTime"  style="font-family:var(--mono);font-size:11px;color:#4b4b6a;margin-left:auto"></span>
+  </div>
+</div>
+<style>@keyframes stIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}</style>
+
 <!-- Phase overlay -->
 <div id="phaseOverlay">
   <div class="po-emoji" id="poEmoji">🔵</div>
@@ -219,6 +247,36 @@ db.ref('teams').on('value', s => {
   rebuildSlides();
   updateSidebar();
   updateTicker();
+});
+
+// ── Social posts: show toast when newest post changes ──────
+let _lastSocialKey = null;
+let _socialToastTimer = null;
+db.ref('social/posts').on('value', snap => {
+  const raw = snap.val() || {};
+  const entries = Object.entries(raw).sort((a, b) => b[1].timestamp - a[1].timestamp);
+  if (!entries.length) return;
+  const [newestKey, newest] = entries[0];
+  if (newestKey === _lastSocialKey) return;
+  _lastSocialKey = newestKey;
+
+  // Don't flash on initial page load (only if post is <30s old)
+  if (Date.now() - (newest.timestamp || 0) > 30000) return;
+
+  const toast = document.getElementById('socialToast');
+  document.getElementById('stAvatar').textContent = newest.avatar || '👤';
+  document.getElementById('stName').textContent   = newest.displayName || '';
+  document.getElementById('stHandle').textContent = newest.handle || '';
+  document.getElementById('stText').textContent   = newest.text || '';
+  document.getElementById('stLikes').textContent  = '❤️ ' + (newest.likes || 0).toLocaleString();
+  document.getElementById('stTime').textContent   = 'just now';
+
+  toast.style.display = 'block';
+  toast.style.animation = 'none';
+  requestAnimationFrame(() => { toast.style.animation = 'stIn .4s ease'; });
+
+  clearTimeout(_socialToastTimer);
+  _socialToastTimer = setTimeout(() => { toast.style.display = 'none'; }, 9000);
 });
 
 // Clock
