@@ -254,12 +254,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
       <div class="sparkline-wrap" id="sparklineWrap"></div>
     </div>
 
-    <!-- Tabs: Events / Journal / Letters / Scores -->
+    <!-- Tabs: Events / Journal / Letters / Scores / BuzzNet -->
     <div class="tabs">
       <div class="tab active" data-tab="events">📰 Events</div>
       <div class="tab" data-tab="journal">📓 Journal</div>
       <div class="tab" data-tab="letters">📬 Shareholder Letters</div>
       <div class="tab" data-tab="scores">📋 Scores</div>
+      <div class="tab" data-tab="social">📣 BuzzNet</div>
     </div>
 
     <div class="tab-panel active" id="tab-events">
@@ -276,6 +277,53 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
     <div class="tab-panel" id="tab-scores">
       <div id="scoreLog"><div class="empty-state">No deliverables scored yet.</div></div>
+    </div>
+
+    <div class="tab-panel" id="tab-social">
+
+      <!-- Quota bar -->
+      <div id="buzzQuotaBar" style="background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:16px">
+        <div style="flex:1">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:6px">Weekly Posts</div>
+          <div style="display:flex;gap:8px" id="buzzQuotaDots">
+            <div style="width:14px;height:14px;border-radius:50%;background:var(--bg);border:1px solid var(--muted)"></div>
+            <div style="width:14px;height:14px;border-radius:50%;background:var(--bg);border:1px solid var(--muted)"></div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:var(--serif);font-size:28px;font-weight:900" id="buzzQuotaCount">0</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted)">of 2 this week</div>
+        </div>
+      </div>
+
+      <!-- Composer -->
+      <div class="card" id="buzzComposerCard">
+        <div class="card-title">Post as <span id="buzzBrandName">your brand</span></div>
+        <div id="buzzQuotaReached" style="display:none;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-family:var(--mono);font-size:12px;color:var(--green)">
+          ✓ You've hit your 2-post quota for this week. New posts available next week.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px" id="buzzComposerFields">
+          <textarea id="buzzPostText" rows="3" placeholder="What's happening with your brand this week?"
+            style="width:100%;padding:10px;background:var(--bg4);color:var(--text);border:1px solid var(--border2);border-radius:6px;font-family:var(--sans);font-size:14px;resize:vertical;line-height:1.5;outline:none"></textarea>
+          <input type="url" id="buzzPostImage" placeholder="Image URL (optional)"
+            style="width:100%;padding:8px 10px;background:var(--bg4);color:var(--text);border:1px solid var(--border2);border-radius:6px;font-family:var(--mono);font-size:12px;outline:none">
+          <div id="buzzImgPreview" style="display:none">
+            <img id="buzzImgThumb" src="" alt="" style="max-width:100%;max-height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" onerror="document.getElementById('buzzImgPreview').style.display='none'">
+          </div>
+          <button onclick="publishBrandPost()"
+            style="background:var(--amber);color:#000;border:none;padding:10px 20px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;border-radius:4px;letter-spacing:.06em;text-transform:uppercase">
+            📣 Post to BuzzNet
+          </button>
+          <div id="buzzPostMsg" style="font-family:var(--mono);font-size:11px;display:none"></div>
+        </div>
+      </div>
+
+      <!-- This team's past posts -->
+      <div class="card">
+        <div class="card-title">Your Posts This Season</div>
+        <div id="buzzPostHistory"><div class="empty-state">No posts yet — use the composer above.</div></div>
+      </div>
+
     </div>
 
   </div><!-- /main -->
@@ -321,7 +369,7 @@ if (!TEAM_ID) {
   if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
   const db = firebase.database();
 
-  let seasonData = {}, teamData = {}, allTeams = {};
+  let seasonData = {}, teamData = {}, allTeams = {}, socialPosts = {};
 
   db.ref('season').on('value', snap => {
     seasonData = snap.val() || {};
@@ -329,6 +377,16 @@ if (!TEAM_ID) {
     render();
   });
   db.ref('teams').on('value', snap => { allTeams = snap.val() || {}; teamData = allTeams[TEAM_ID] || {}; render(); });
+  db.ref('social/posts').on('value', snap => { socialPosts = snap.val() || {}; renderBuzzNetTab(); });
+
+  // Image preview as URL is typed
+  document.getElementById('buzzPostImage').addEventListener('input', function() {
+    var url = this.value.trim();
+    var wrap  = document.getElementById('buzzImgPreview');
+    var thumb = document.getElementById('buzzImgThumb');
+    if (url) { thumb.src = url; wrap.style.display = 'block'; }
+    else     { wrap.style.display = 'none'; thumb.src = ''; }
+  });
 
   // ── Tabs ──────────────────────────────────────────────────────
   document.querySelectorAll('.tab').forEach(tab => {
@@ -412,6 +470,9 @@ if (!TEAM_ID) {
 
     // Standing
     renderStanding(score);
+
+    // BuzzNet tab
+    renderBuzzNetTab();
   }
 
   function renderPhaseTrack(week) {
@@ -531,6 +592,125 @@ if (!TEAM_ID) {
     document.getElementById('dossierRows').innerHTML = rows.map(([k,v]) =>
       `<div class="dossier-row"><span class="dossier-key">${k}</span><span class="dossier-val">${v}</span></div>`
     ).join('');
+  }
+
+  // ── BuzzNet tab ───────────────────────────────────────────
+  function renderBuzzNetTab() {
+    if (!teamData.brandName) return;
+    var week  = seasonData.currentWeek || 1;
+    var QUOTA = 2;
+
+    // Only count brand-page posts from this team this week
+    var myWeekPosts = Object.values(socialPosts).filter(function(p) {
+      return p.teamId === TEAM_ID && p.accountType === 'brand' && p.week === week;
+    });
+    var count   = myWeekPosts.length;
+    var atQuota = count >= QUOTA;
+
+    // Update quota UI
+    document.getElementById('buzzBrandName').textContent = teamData.brandName;
+    document.getElementById('buzzQuotaCount').textContent = count;
+    document.getElementById('buzzQuotaCount').style.color = atQuota ? 'var(--green)' : count > 0 ? 'var(--amber)' : 'var(--text2)';
+
+    var dotsHtml = Array.from({ length: QUOTA }, function(_, i) {
+      var filled = i < count;
+      var color  = filled ? (atQuota ? 'var(--green)' : 'var(--amber)') : 'var(--bg)';
+      var border = filled ? (atQuota ? 'var(--green)' : 'var(--amber)') : 'var(--muted)';
+      return '<div style="width:14px;height:14px;border-radius:50%;background:' + color + ';border:1px solid ' + border + '"></div>';
+    }).join('');
+    document.getElementById('buzzQuotaDots').innerHTML = dotsHtml;
+
+    // Show/hide composer + quota-reached message
+    document.getElementById('buzzQuotaReached').style.display   = atQuota ? 'block' : 'none';
+    document.getElementById('buzzComposerFields').style.opacity = atQuota ? '0.4' : '1';
+    document.getElementById('buzzComposerFields').style.pointerEvents = atQuota ? 'none' : 'auto';
+
+    // All posts from this team (all time), newest first
+    var allMyPosts = Object.entries(socialPosts)
+      .map(function(e) { return Object.assign({ _key: e[0] }, e[1]); })
+      .filter(function(p) { return p.teamId === TEAM_ID && p.accountType === 'brand'; })
+      .sort(function(a, b) { return b.timestamp - a.timestamp; });
+
+    var histEl = document.getElementById('buzzPostHistory');
+    if (!allMyPosts.length) {
+      histEl.innerHTML = '<div class="empty-state">No posts yet — use the composer above.</div>';
+      return;
+    }
+    histEl.innerHTML = allMyPosts.map(function(p) {
+      var isThisWeek = p.week === week;
+      var imgHtml = p.imageUrl
+        ? '<img src="' + p.imageUrl + '" style="width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin-top:8px;display:block" onerror="this.style.display=\'none\'">'
+        : '';
+      return '<div style="padding:12px;background:var(--bg4);border:1px solid ' +
+        (isThisWeek ? 'rgba(245,166,35,.3)' : 'var(--border)') +
+        ';border-radius:8px;margin-bottom:10px">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+          '<span style="font-family:var(--mono);font-size:10px;color:var(--amber)">Week ' + (p.week || '?') + '</span>' +
+          (isThisWeek ? '<span style="font-family:var(--mono);font-size:9px;background:rgba(245,166,35,.1);color:var(--amber);padding:1px 6px;border-radius:4px">this week</span>' : '') +
+          '<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">❤️ ' + (p.likes || 0) + '</span>' +
+        '</div>' +
+        '<div style="font-size:13px;line-height:1.55;color:var(--text)">' + escHtml(p.text || '') + '</div>' +
+        imgHtml +
+      '</div>';
+    }).join('');
+  }
+
+  function publishBrandPost() {
+    var text  = (document.getElementById('buzzPostText').value  || '').trim();
+    var image = (document.getElementById('buzzPostImage').value || '').trim();
+    var week  = seasonData.currentWeek || 1;
+    var msgEl = document.getElementById('buzzPostMsg');
+
+    if (!text) {
+      showMsg(msgEl, 'Write something first.', 'var(--red)');
+      return;
+    }
+
+    // Re-check quota at publish time
+    var myWeekCount = Object.values(socialPosts).filter(function(p) {
+      return p.teamId === TEAM_ID && p.accountType === 'brand' && p.week === week;
+    }).length;
+
+    if (myWeekCount >= 2) {
+      showMsg(msgEl, 'Quota reached for this week.', 'var(--muted)');
+      return;
+    }
+
+    var brandHandle = '@' + (teamData.brandName || 'brand').replace(/\s+/g, '') + 'Official';
+    var post = {
+      displayName: teamData.brandName || 'Unknown Brand',
+      handle:      brandHandle,
+      avatar:      '🏢',
+      accountType: 'brand',
+      text:        text,
+      teamId:      TEAM_ID,
+      teamTag:     '#' + (teamData.brandName || '').replace(/\s+/g, ''),
+      imageUrl:    image || null,
+      week:        week,
+      likes:       Math.floor(Math.random() * 600) + 80,
+      timestamp:   Date.now(),
+    };
+
+    db.ref('social/posts').push(post).then(function() {
+      document.getElementById('buzzPostText').value  = '';
+      document.getElementById('buzzPostImage').value = '';
+      document.getElementById('buzzImgPreview').style.display = 'none';
+      showMsg(msgEl, '✓ Posted to BuzzNet!', 'var(--green)');
+    }).catch(function(e) {
+      showMsg(msgEl, 'Error: ' + e.message, 'var(--red)');
+    });
+  }
+
+  function showMsg(el, text, color) {
+    el.textContent = text;
+    el.style.color = color;
+    el.style.display = 'block';
+    clearTimeout(el._t);
+    el._t = setTimeout(function() { el.style.display = 'none'; }, 4000);
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   function renderStanding(myScore) {

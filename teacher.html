@@ -1945,10 +1945,10 @@ function renderQuotaChecklist() {
     return;
   }
 
-  // Count posts for this week linked to each team
+  // Count only brand-page posts (accountType === 'brand') toward the quota
   var counts = {};
   Object.values(_socialPosts).forEach(function(p) {
-    if (p.teamId && p.week === week) {
+    if (p.teamId && p.week === week && p.accountType === 'brand') {
       counts[p.teamId] = (counts[p.teamId] || 0) + 1;
     }
   });
