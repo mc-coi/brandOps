@@ -450,6 +450,115 @@
   .ic-purple{ background: var(--purple-light); }
   .ic-blue  { background: var(--blue-light); }
   .ic-rose  { background: var(--rose-light); }
+
+  /* ── LEARNING TARGETS ── */
+  .targets-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .target-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: #fff;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .target-check {
+    width: 28px;
+    height: 28px;
+    background: var(--teal-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .target-text strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 3px;
+  }
+  .target-text span {
+    font-size: 13px;
+    color: var(--gray-600);
+    line-height: 1.55;
+  }
+
+  /* ── TOOLS CALLOUT ── */
+  .tools-callout {
+    background: var(--gray-900);
+    border-radius: 16px;
+    padding: 36px 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .tools-callout-text .tools-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 10px;
+  }
+  .tools-callout-text h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 12px;
+    line-height: 1.25;
+  }
+  .tools-callout-text p {
+    font-size: 14px;
+    color: #a8a29e;
+    line-height: 1.75;
+  }
+  .tools-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .tool-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .tool-icon {
+    font-size: 22px;
+    width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .tool-info strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #e8e3d8;
+    margin-bottom: 2px;
+  }
+  .tool-info span {
+    font-size: 12px;
+    color: #6b7280;
+  }
+
+  @media (max-width: 700px) {
+    .targets-grid { grid-template-columns: 1fr; }
+    .tools-callout { grid-template-columns: 1fr; gap: 24px; padding: 24px; }
+  }
 </style>
 </head>
 <body>
@@ -606,8 +715,94 @@
   </div>
 </section>
 
-<!-- Season Phases -->
+<!-- Learning Targets & Professional Tools -->
 <section class="section section-alt">
+  <div class="container">
+    <div class="section-eyebrow">Learning Targets</div>
+    <h2 class="section-title">What Students Will Be Able To Do</h2>
+    <p class="section-lead">By the end of the semester, students will demonstrate mastery of the following course-level learning targets — applied directly through their brand work.</p>
+
+    <div class="targets-grid">
+      <div class="target-item">
+        <div class="target-check">✓</div>
+        <div class="target-text">
+          <strong>Develop a cohesive brand identity</strong>
+          <span>Students will design and document a complete brand system including logo, color palette, typography, tone of voice, and target audience profile.</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <div class="target-check">✓</div>
+        <div class="target-text">
+          <strong>Plan and execute a marketing campaign</strong>
+          <span>Students will create multi-platform campaigns with a defined objective, message strategy, and intended audience — then evaluate their effectiveness.</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <div class="target-check">✓</div>
+        <div class="target-text">
+          <strong>Produce professional-quality media content</strong>
+          <span>Students will write, shoot, record, and edit original video, audio, and graphic content using industry-standard tools and equipment.</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <div class="target-check">✓</div>
+        <div class="target-text">
+          <strong>Analyze market data and competitor positioning</strong>
+          <span>Students will research and interpret market trends, audience behavior, and competitor strategies to inform their brand decisions.</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <div class="target-check">✓</div>
+        <div class="target-text">
+          <strong>Communicate ideas through professional presentation</strong>
+          <span>Students will pitch brand concepts and campaign proposals clearly and persuasively in written, visual, and spoken formats.</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <div class="target-check">✓</div>
+        <div class="target-text">
+          <strong>Apply ethical and strategic decision-making</strong>
+          <span>Students will evaluate the risks and responsibilities of business decisions, including how brands respond to crises and public scrutiny.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tools & Equipment Callout -->
+    <div class="tools-callout">
+      <div class="tools-callout-text">
+        <div class="tools-eyebrow">Professional Tools & Equipment</div>
+        <h3>Industry-Standard From Day One</h3>
+        <p>Students don't work with watered-down tools. This class is equipped with the same professional software and hardware used in real media and marketing careers — so the work students create here is genuinely portfolio-ready.</p>
+      </div>
+      <div class="tools-list">
+        <div class="tool-row">
+          <div class="tool-icon">🎨</div>
+          <div class="tool-info">
+            <strong>Full Adobe Creative Suite</strong>
+            <span>Photoshop, Illustrator, Premiere Pro, After Effects, InDesign &amp; more</span>
+          </div>
+        </div>
+        <div class="tool-row">
+          <div class="tool-icon">🎙️</div>
+          <div class="tool-info">
+            <strong>Professional-Grade Microphones</strong>
+            <span>Studio-quality audio recording for podcasts, voiceovers, and video production</span>
+          </div>
+        </div>
+        <div class="tool-row">
+          <div class="tool-icon">🎥</div>
+          <div class="tool-info">
+            <strong>Professional Camera Equipment</strong>
+            <span>High-resolution cameras and lighting rigs for photo shoots and video campaigns</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Season Phases -->
+<section class="section">
   <div class="container">
     <div class="section-eyebrow">The Season</div>
     <h2 class="section-title">18 Weeks, Six Phases</h2>
@@ -667,7 +862,7 @@
 </section>
 
 <!-- FAQ -->
-<section class="section">
+<section class="section section-alt">
   <div class="container">
     <div class="section-eyebrow">Common Questions</div>
     <h2 class="section-title">For Parents &amp; Families</h2>
@@ -692,7 +887,7 @@
       </div>
       <div class="faq-item">
         <h4>What software or tools do students use?</h4>
-        <p>Students use a variety of industry-standard tools throughout the year depending on the deliverable — including design tools, presentation software, and word processing. The simulation itself runs entirely in a web browser, with no downloads required.</p>
+        <p>Students have access to the full Adobe Creative Suite — including Photoshop, Illustrator, Premiere Pro, After Effects, and InDesign — along with professional-grade microphones and cameras for video and audio production. The simulation itself runs entirely in a web browser, with no downloads required. The goal is for every student to leave with real, portfolio-ready work made with industry-standard tools.</p>
       </div>
       <div class="faq-item">
         <h4>How does the "stock market" part work?</h4>
