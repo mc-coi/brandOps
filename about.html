@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About BrandOps Simulator — Multimedia Marketing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --amber:   #f59e0b;
+    --amber-light: #fef3c7;
+    --amber-dark: #d97706;
+    --teal:    #0d9488;
+    --teal-light: #ccfbf1;
+    --purple:  #7c3aed;
+    --purple-light: #ede9fe;
+    --blue:    #2563eb;
+    --blue-light: #dbeafe;
+    --rose:    #e11d48;
+    --rose-light: #ffe4e6;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-400: #9ca3af;
+    --gray-600: #4b5563;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #fff;
+    color: var(--gray-800);
+    line-height: 1.6;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, #1c1917 0%, #292524 60%, #1c1917 100%);
+    color: #fff;
+    padding: 72px 24px 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 60% 40%, rgba(245,158,11,0.18) 0%, transparent 70%);
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(245,158,11,0.15);
+    border: 1px solid rgba(245,158,11,0.4);
+    color: #fcd34d;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(36px, 7vw, 72px);
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .hero h1 span { color: var(--amber); }
+  .hero p {
+    font-size: clamp(16px, 2.5vw, 20px);
+    color: #d6d3d1;
+    max-width: 620px;
+    margin: 0 auto 36px;
+    font-weight: 300;
+    position: relative;
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .hero-stat {
+    text-align: center;
+  }
+  .hero-stat .num {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--amber);
+    display: block;
+    line-height: 1;
+  }
+  .hero-stat .label {
+    font-size: 12px;
+    color: #a8a29e;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    display: block;
+  }
+
+  /* ── SECTIONS ── */
+  .section {
+    padding: 72px 24px;
+  }
+  .section-alt {
+    background: var(--gray-50);
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .section-eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--amber-dark);
+    margin-bottom: 10px;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(26px, 4vw, 40px);
+    font-weight: 900;
+    color: var(--gray-900);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+  .section-lead {
+    font-size: 17px;
+    color: var(--gray-600);
+    max-width: 640px;
+    margin-bottom: 48px;
+    line-height: 1.7;
+  }
+
+  /* ── WHAT IS IT ── */
+  .what-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .what-text p {
+    font-size: 16px;
+    color: var(--gray-600);
+    line-height: 1.8;
+    margin-bottom: 16px;
+  }
+  .what-visual {
+    background: var(--gray-900);
+    border-radius: 16px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .what-visual::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(245,158,11,0.2) 0%, transparent 70%);
+  }
+  .mock-ticker {
+    background: var(--amber);
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 12px;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    display: inline-block;
+  }
+  .mock-brand {
+    border: 1px solid #2a2a30;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .mock-brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #e8e3d8;
+  }
+  .mock-brand-tag {
+    font-size: 10px;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+  .mock-score {
+    font-size: 22px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+  }
+  .mock-score.gold { color: var(--amber); }
+  .mock-score.silver { color: #9ca3af; }
+  .mock-score.bronze { color: #b45309; }
+
+  /* ── HOW IT WORKS ── */
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 28px;
+  }
+  .step-card {
+    background: #fff;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 14px;
+    padding: 28px 24px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .step-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  }
+  .step-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+  .step-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 8px;
+  }
+  .step-card p {
+    font-size: 14px;
+    color: var(--gray-600);
+    line-height: 1.65;
+  }
+
+  /* ── SKILLS ── */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+  }
+  .skill-pill {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    border: 1.5px solid var(--gray-200);
+  }
+  .skill-emoji { font-size: 28px; display: block; margin-bottom: 8px; }
+  .skill-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 4px;
+  }
+  .skill-desc {
+    font-size: 12px;
+    color: var(--gray-400);
+    line-height: 1.5;
+  }
+
+  /* ── SEASON PHASES ── */
+  .phases-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1.5px solid var(--gray-200);
+  }
+  .phase-row {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--gray-100);
+    background: #fff;
+    transition: background 0.2s;
+  }
+  .phase-row:last-child { border-bottom: none; }
+  .phase-row:hover { background: var(--gray-50); }
+  .phase-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--gray-200);
+    text-align: center;
+    line-height: 1;
+  }
+  .phase-info h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 3px;
+  }
+  .phase-info p {
+    font-size: 13px;
+    color: var(--gray-600);
+  }
+  .phase-weeks {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--gray-400);
+    white-space: nowrap;
+  }
+
+  /* ── FAQ ── */
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 720px;
+  }
+  .faq-item {
+    background: #fff;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 22px 24px;
+  }
+  .faq-item h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 8px;
+  }
+  .faq-item p {
+    font-size: 14px;
+    color: var(--gray-600);
+    line-height: 1.7;
+  }
+
+  /* ── CTA FOOTER ── */
+  .cta-section {
+    background: linear-gradient(135deg, #1c1917, #292524);
+    color: #fff;
+    padding: 72px 24px;
+    text-align: center;
+  }
+  .cta-section h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 900;
+    margin-bottom: 16px;
+    color: #fff;
+  }
+  .cta-section p {
+    font-size: 17px;
+    color: #a8a29e;
+    margin-bottom: 36px;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .btn {
+    display: inline-block;
+    background: var(--amber);
+    color: #000;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px 32px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .btn:hover { background: var(--amber-dark); transform: translateY(-1px); }
+  .btn-ghost {
+    display: inline-block;
+    background: transparent;
+    color: #e8e3d8;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 14px 32px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+    margin-left: 12px;
+  }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+
+  /* ── NAV ── */
+  .top-nav {
+    background: #fff;
+    border-bottom: 1px solid var(--gray-100);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+  }
+  .nav-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--gray-900);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--amber-dark); }
+  .nav-link {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray-600);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-link:hover { background: var(--gray-100); color: var(--gray-900); }
+  .nav-link.active {
+    background: var(--amber-light);
+    color: var(--amber-dark);
+    font-weight: 600;
+  }
+  .nav-links { display: flex; gap: 4px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    .what-grid { grid-template-columns: 1fr; }
+    .what-visual { display: none; }
+    .hero-stats { gap: 24px; }
+    .btn-ghost { margin-left: 0; margin-top: 12px; display: block; }
+    .nav-links { display: none; }
+  }
+
+  /* Accent colors for step icons */
+  .ic-amber { background: var(--amber-light); }
+  .ic-teal  { background: var(--teal-light); }
+  .ic-purple{ background: var(--purple-light); }
+  .ic-blue  { background: var(--blue-light); }
+  .ic-rose  { background: var(--rose-light); }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="top-nav">
+  <a href="index.html" class="nav-logo">Brand<span>Ops</span></a>
+  <div class="nav-links">
+    <a href="about.html" class="nav-link active">About</a>
+    <a href="index.html" class="nav-link">Live Market Board</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge">🏫 Multimedia Marketing · Class Project</div>
+  <h1>Welcome to<br><span>BrandOps</span> Simulator</h1>
+  <p>A real-world marketing simulation where students build brands, manage business decisions, and compete in a live market — all inside the classroom.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><span class="num">18</span><span class="label">Week Season</span></div>
+    <div class="hero-stat"><span class="num">6</span><span class="label">Phases of Play</span></div>
+    <div class="hero-stat"><span class="num">60+</span><span class="label">Event Cards</span></div>
+    <div class="hero-stat"><span class="num">5</span><span class="label">Brand Stats</span></div>
+  </div>
+</section>
+
+<!-- What Is It -->
+<section class="section">
+  <div class="container">
+    <div class="what-grid">
+      <div class="what-text">
+        <div class="section-eyebrow">What is BrandOps?</div>
+        <h2 class="section-title">A Classroom Simulation Grounded in Real Marketing</h2>
+        <p>BrandOps Simulator is a semester-long game that transforms our Multimedia Marketing class into a living marketplace. Every student team creates and manages a fictional brand — choosing their industry, target audience, and identity — then competes to grow it into the most valuable brand in the class.</p>
+        <p>The simulation runs for 18 weeks across six phases, each mimicking a real stage of brand development — from initial launch all the way through crisis management and market dominance. Students make decisions, score points by completing real marketing deliverables, and watch their "stock price" rise and fall in real time on a shared class board.</p>
+        <p>The goal isn't just to win the leaderboard. It's to build the habits, vocabulary, and instincts of real marketing professionals — and have a lot of fun along the way.</p>
+      </div>
+      <div class="what-visual">
+        <div class="mock-ticker">▲ APEX FOODS $142.50 &nbsp;·&nbsp; ▼ NOVA TECH $98.20 &nbsp;·&nbsp; ▲ LUMINA $117.00</div>
+        <div style="font-size:11px; color:#6b7280; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:12px;">Market Leaderboard · Live</div>
+        <div class="mock-brand">
+          <div>
+            <div class="mock-brand-name">Apex Foods</div>
+            <div class="mock-brand-tag">Food & Bev · Young Adults</div>
+          </div>
+          <div class="mock-score gold">847</div>
+        </div>
+        <div class="mock-brand">
+          <div>
+            <div class="mock-brand-name">Lumina</div>
+            <div class="mock-brand-tag">Beauty · Gen Z</div>
+          </div>
+          <div class="mock-score silver">791</div>
+        </div>
+        <div class="mock-brand">
+          <div>
+            <div class="mock-brand-name">Nova Tech</div>
+            <div class="mock-brand-tag">Technology · Professionals</div>
+          </div>
+          <div class="mock-score bronze">738</div>
+        </div>
+        <div style="text-align:center; margin-top:20px; font-size:11px; color:#6b7280;">↑ This is what the live class board looks like</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-eyebrow">How It Works</div>
+    <h2 class="section-title">From Idea to Market Leader</h2>
+    <p class="section-lead">Each step of the simulation mirrors a real stage of brand building. Students don't just learn theory — they practice it.</p>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-icon ic-amber">💡</div>
+        <h3>1. Build Your Brand</h3>
+        <p>Teams choose a brand name, industry, target demographic, and home country. They're not just naming a product — they're building an identity that will guide every decision they make.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-icon ic-teal">📊</div>
+        <h3>2. Manage Your Stats</h3>
+        <p>Every brand tracks five key stats: Demand, Reputation, Innovation, Risk, and Budget. Scoring well on assignments moves these stats up — neglecting them causes them to decay.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-icon ic-purple">🎴</div>
+        <h3>3. Draw Event Cards</h3>
+        <p>Throughout the season, teams draw real-world-style event cards — a supply chain crisis, a viral social media moment, a sudden competitor launch. Teams must respond strategically, just like real brands do.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-icon ic-blue">📈</div>
+        <h3>4. Watch Your Stock</h3>
+        <p>A brand's stats are converted into a live "stock price" that updates on the class board. The market fluctuates based on volatility, events, and performance — keeping everyone engaged every single day.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-icon ic-rose">🏆</div>
+        <h3>5. Score Deliverables</h3>
+        <p>Students earn points by completing real marketing deliverables — ad campaigns, brand guidelines, social media posts, market analyses — that are scored and applied directly to their brand's stats.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- What Students Learn -->
+<section class="section">
+  <div class="container">
+    <div class="section-eyebrow">Learning Outcomes</div>
+    <h2 class="section-title">Real Skills for a Real World</h2>
+    <p class="section-lead">BrandOps is designed to build both hard skills and soft skills that students will carry into college, careers, and everyday life.</p>
+
+    <div class="skills-grid">
+      <div class="skill-pill">
+        <span class="skill-emoji">🎨</span>
+        <div class="skill-name">Brand Identity</div>
+        <div class="skill-desc">Logos, tone of voice, visual design systems</div>
+      </div>
+      <div class="skill-pill">
+        <span class="skill-emoji">📱</span>
+        <div class="skill-name">Social Media</div>
+        <div class="skill-desc">Platform strategy, content creation, engagement</div>
+      </div>
+      <div class="skill-pill">
+        <span class="skill-emoji">🔬</span>
+        <div class="skill-name">Market Research</div>
+        <div class="skill-desc">Audience analysis, competitor research, trends</div>
+      </div>
+      <div class="skill-pill">
+        <span class="skill-emoji">💬</span>
+        <div class="skill-name">Storytelling</div>
+        <div class="skill-desc">Ads, campaigns, brand narratives that connect</div>
+      </div>
+      <div class="skill-pill">
+        <span class="skill-emoji">🤝</span>
+        <div class="skill-name">Teamwork</div>
+        <div class="skill-desc">Collaboration, delegation, shared accountability</div>
+      </div>
+      <div class="skill-pill">
+        <span class="skill-emoji">🧩</span>
+        <div class="skill-name">Problem-Solving</div>
+        <div class="skill-desc">Adapting strategy when events disrupt the plan</div>
+      </div>
+      <div class="skill-pill">
+        <span class="skill-emoji">📣</span>
+        <div class="skill-name">Presentation</div>
+        <div class="skill-desc">Pitching ideas clearly and persuasively</div>
+      </div>
+      <div class="skill-pill">
+        <span class="skill-emoji">💰</span>
+        <div class="skill-name">Business Basics</div>
+        <div class="skill-desc">Budget management, risk vs. reward, market dynamics</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Season Phases -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-eyebrow">The Season</div>
+    <h2 class="section-title">18 Weeks, Six Phases</h2>
+    <p class="section-lead">The simulation is structured like a real business year, with each phase raising the stakes and introducing new challenges.</p>
+
+    <div class="phases-list">
+      <div class="phase-row">
+        <div class="phase-num">1</div>
+        <div class="phase-info">
+          <h4>🚀 Brand Launch</h4>
+          <p>Teams establish their brand identity, define their target audience, and enter the market for the first time. Stakes are low — this is about building a foundation.</p>
+        </div>
+        <div class="phase-weeks">Weeks 1–3</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-num">2</div>
+        <div class="phase-info">
+          <h4>📣 Market Entry</h4>
+          <p>Brands launch their first campaigns, compete for attention, and start seeing their decisions reflected in their stats and stock price.</p>
+        </div>
+        <div class="phase-weeks">Weeks 4–6</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-num">3</div>
+        <div class="phase-info">
+          <h4>⚡ Growth Sprint</h4>
+          <p>The market gets more volatile. Teams that built a strong foundation start pulling ahead — and those that didn't feel the pressure.</p>
+        </div>
+        <div class="phase-weeks">Weeks 7–9</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-num">4</div>
+        <div class="phase-info">
+          <h4>🌐 Scale Up</h4>
+          <p>Teams must think bigger — expanding their reach, refining their messaging, and dealing with more complex event card scenarios.</p>
+        </div>
+        <div class="phase-weeks">Weeks 10–12</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-num">5</div>
+        <div class="phase-info">
+          <h4>🔥 Crisis & Comeback</h4>
+          <p>Every brand faces adversity. This phase tests resilience — how teams respond to setbacks determines whether they rise or fall in the final stretch.</p>
+        </div>
+        <div class="phase-weeks">Weeks 13–15</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-num">6</div>
+        <div class="phase-info">
+          <h4>👑 Market Dominance</h4>
+          <p>The final phase. Everything is on the line. Teams make their last big moves, deliver their capstone work, and fight for the top spot on the leaderboard.</p>
+        </div>
+        <div class="phase-weeks">Weeks 16–18</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section">
+  <div class="container">
+    <div class="section-eyebrow">Common Questions</div>
+    <h2 class="section-title">For Parents &amp; Families</h2>
+    <p class="section-lead">Here are answers to some of the questions families ask most often.</p>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <h4>Is this a graded class project?</h4>
+        <p>Yes — students are graded on the actual marketing deliverables they complete, not just their leaderboard position. The simulation provides context and motivation, but the grade comes from the quality of the work students produce throughout the semester.</p>
+      </div>
+      <div class="faq-item">
+        <h4>What kinds of deliverables do students create?</h4>
+        <p>Students create real marketing materials throughout the year, including brand identity packages, advertising campaigns, social media content, market research analyses, press releases, and brand pitch presentations — all tied to their fictional brand.</p>
+      </div>
+      <div class="faq-item">
+        <h4>Does my student work alone or in a team?</h4>
+        <p>Students work in small teams (typically 2–4 students) and are collectively responsible for their brand. Part of what the simulation teaches is how to collaborate effectively and divide work fairly — a skill as important as any marketing concept.</p>
+      </div>
+      <div class="faq-item">
+        <h4>Can I see what my student's brand looks like?</h4>
+        <p>Absolutely! The live market board is publicly accessible at any time and shows every team's brand, current ranking, and stats. Your student can share the link with you so you can follow along throughout the semester.</p>
+      </div>
+      <div class="faq-item">
+        <h4>What software or tools do students use?</h4>
+        <p>Students use a variety of industry-standard tools throughout the year depending on the deliverable — including design tools, presentation software, and word processing. The simulation itself runs entirely in a web browser, with no downloads required.</p>
+      </div>
+      <div class="faq-item">
+        <h4>How does the "stock market" part work?</h4>
+        <p>Each brand has five underlying stats (Demand, Reputation, Innovation, Risk, and Budget). These stats are calculated into a Market Score, which is then converted into a stock price that fluctuates slightly based on market volatility. It's a fun way to make abstract marketing concepts feel tangible and real — students can literally watch good work pay off.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>See It in Action</h2>
+  <p>The Live Market Board is always on. Watch the class leaderboard, track event cards, and follow along as brands rise and fall throughout the semester.</p>
+  <a href="index.html" class="btn">View Live Market Board →</a>
+</section>
+
+<!-- Footer -->
+<footer style="background: #0c0a09; padding: 24px; text-align: center; font-size: 13px; color: #57534e;">
+  BrandOps Simulator &nbsp;·&nbsp; Multimedia Marketing Class &nbsp;·&nbsp; Built for student learning
+</footer>
+
+</body>
+</html>
