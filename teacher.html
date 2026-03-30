@@ -9,6 +9,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
 <style>
 :root {
@@ -797,21 +798,24 @@ function doLogin() {
     btn.textContent = 'Enter';
     btn.disabled = false;
     const stored = snap.val();
+
+    function launchConsole(db) {
+      firebase.auth().signInAnonymously().catch(() => {}).finally(() => {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appShell').style.display = 'block';
+        initApp(db);
+      });
+    }
+
     if (!stored) {
       // No password set yet — first run, accept anything and save it
       authDb.ref('config/teacherPassword').set(pw).then(() => {
         err.style.color = 'var(--green)';
         err.textContent = '✓ Password set. You are now logged in.';
-        setTimeout(() => {
-          document.getElementById('loginScreen').style.display = 'none';
-          document.getElementById('appShell').style.display = 'block';
-          initApp(authDb);
-        }, 1200);
+        setTimeout(() => launchConsole(authDb), 1200);
       });
     } else if (pw === stored) {
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('appShell').style.display = 'block';
-      initApp(authDb);
+      launchConsole(authDb);
     } else {
       err.style.color = '';
       err.textContent = 'Incorrect password.';
