@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <style>
 :root {
   --bg:#0a0a0b; --bg2:#111117; --bg3:#18181f; --bg4:#1e1e28;
@@ -159,12 +160,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 #phaseOverlay .po-quote  { font-family: 'Lora', Georgia, serif; font-size: 18px; font-style: italic; opacity: 0.8; max-width: 480px; line-height: 1.6; }
 #phaseOverlay .po-skip   { position: absolute; bottom: 32px; right: 32px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; opacity: 0.5; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase; }
 #phaseOverlay .po-skip:hover { opacity: 1; }
+
+/* ── Brand Identity panel ── */
+.id-logo-box{width:80px;height:80px;border:2px dashed var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 6px;cursor:pointer;transition:border-color .15s;background:var(--bg4);}
+.id-logo-box:hover{border-color:var(--amber);}
+.id-logo-img{width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid var(--border2);cursor:pointer;display:block;margin:0 auto 6px;}
+.id-field{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:6px 8px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;transition:border-color .15s;}
+.id-field:focus{border-color:var(--amber);}
+.id-label{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.id-save-btn{width:100%;background:var(--amber);color:#000;border:none;border-radius:4px;padding:8px;font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:background .15s;}
+.id-save-btn:hover{background:var(--amber2);}
+/* ── Top-bar logo ── */
+.top-logo{width:38px;height:38px;object-fit:contain;border-radius:6px;border:1px solid var(--border);display:none;}
+
+/* ── Score entry media link ── */
+.score-media-link{display:inline-block;margin-top:4px;font-family:var(--mono);font-size:10px;color:var(--blue);text-decoration:none;}
+.score-media-link:hover{text-decoration:underline;}
 </style>
 </head>
 <body>
 
 <div class="top-bar">
   <div class="brand-id">
+    <img id="topLogo" class="top-logo" src="" alt="">
     <div>
       <div class="brand-name-top" id="topBrandName">Loading…</div>
       <div class="brand-tag" id="topBrandTag">—</div>
@@ -330,6 +348,33 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
   <!-- ═══ SIDEBAR ═══ -->
   <div class="sidebar">
+    <!-- Brand Identity -->
+    <div style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:12px">Brand Identity</div>
+      <div id="identityPanel">
+        <div style="margin-bottom:8px">
+          <div class="id-label">Logo URL</div>
+          <input id="logoUrlInput" type="url" placeholder="Paste Imgur or Google Photos link…" class="id-field" oninput="previewLogoUrl(this.value)">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px">Upload to <a href="https://imgur.com/upload" target="_blank" style="color:var(--amber)">Imgur.com</a> (free) → copy link → paste here</div>
+        </div>
+        <div style="text-align:center;margin-bottom:10px">
+          <div class="id-logo-box" id="logoPlaceholder">🏢</div>
+          <img class="id-logo-img" id="logoImgPreview" src="" alt="" style="display:none">
+        </div>
+        <div style="margin-bottom:8px">
+          <div class="id-label">Brand Tagline</div>
+          <input id="taglineInput" type="text" maxlength="60" placeholder="Your brand's slogan…" class="id-field">
+        </div>
+        <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px">
+          <div class="id-label" style="margin:0">Brand Color</div>
+          <input type="color" id="brandColorInput" value="#f5a623" style="width:40px;height:30px;border:1px solid var(--border2);border-radius:4px;background:none;cursor:pointer;padding:2px">
+          <span id="brandColorHex" style="font-family:var(--mono);font-size:10px;color:var(--muted)">#f5a623</span>
+        </div>
+        <button class="id-save-btn" onclick="saveIdentity()">Save Identity</button>
+        <div id="identityMsg" style="font-family:var(--mono);font-size:10px;text-align:center;margin-top:6px;display:none"></div>
+      </div>
+    </div>
+
     <div class="card-title" style="margin-bottom:14px">Brand Dossier</div>
     <div id="dossierRows"></div>
 
@@ -368,8 +413,9 @@ if (!TEAM_ID) {
 } else {
   if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
   const db = firebase.database();
+  firebase.auth().signInAnonymously().catch(() => {});
 
-  let seasonData = {}, teamData = {}, allTeams = {}, socialPosts = {};
+  let seasonData = {}, teamData = {}, allTeams = {}, socialPosts = {}, identityData = {};
 
   db.ref('season').on('value', snap => {
     seasonData = snap.val() || {};
@@ -378,6 +424,10 @@ if (!TEAM_ID) {
   });
   db.ref('teams').on('value', snap => { allTeams = snap.val() || {}; teamData = allTeams[TEAM_ID] || {}; render(); });
   db.ref('social/posts').on('value', snap => { socialPosts = snap.val() || {}; renderBuzzNetTab(); });
+  db.ref('teams/' + TEAM_ID + '/identity').on('value', snap => {
+    identityData = snap.val() || {};
+    renderIdentity();
+  });
 
   // Image preview as URL is typed
   document.getElementById('buzzPostImage').addEventListener('input', function() {
@@ -569,10 +619,14 @@ if (!TEAM_ID) {
     if (!log.length) { el.innerHTML = '<div class="empty-state">No deliverables scored yet.</div>'; return; }
     el.innerHTML = log.sort((a,b) => b.timestamp - a.timestamp).map(e => {
       const del = DELIVERABLE_TYPES[e.deliverable];
+      const mediaLink = e.mediaUrl
+        ? `<a href="${e.mediaUrl}" target="_blank" class="score-media-link">▶ View Media</a>`
+        : '';
       return `<div class="score-entry">
         <div>
           <div style="color:var(--text)">${del?.label || e.deliverable}</div>
           <div style="font-size:10px;color:var(--muted)">Week ${e.week}</div>
+          ${mediaLink}
         </div>
         <span class="score-badge s${e.score}">${e.label} (+${e.points})</span>
       </div>`;
@@ -592,6 +646,64 @@ if (!TEAM_ID) {
     document.getElementById('dossierRows').innerHTML = rows.map(([k,v]) =>
       `<div class="dossier-row"><span class="dossier-key">${k}</span><span class="dossier-val">${v}</span></div>`
     ).join('');
+  }
+
+  // ── Brand Identity ────────────────────────────────────────
+  function renderIdentity() {
+    var id      = identityData;
+    var logoImg = document.getElementById('logoImgPreview');
+    var logoBox = document.getElementById('logoPlaceholder');
+    var topLogo = document.getElementById('topLogo');
+    if (id.logoUrl) {
+      document.getElementById('logoUrlInput').value = id.logoUrl;
+      logoImg.src = id.logoUrl;
+      logoImg.style.display = 'block';
+      logoBox.style.display = 'none';
+      topLogo.src = id.logoUrl;
+      topLogo.style.display = 'block';
+    } else {
+      logoImg.style.display = 'none';
+      logoBox.style.display = 'flex';
+      topLogo.style.display = 'none';
+    }
+    if (id.tagline) document.getElementById('taglineInput').value = id.tagline;
+    if (id.brandColor) {
+      document.getElementById('brandColorInput').value = id.brandColor;
+      document.getElementById('brandColorHex').textContent = id.brandColor;
+    }
+  }
+
+  function previewLogoUrl(url) {
+    var logoImg = document.getElementById('logoImgPreview');
+    var logoBox = document.getElementById('logoPlaceholder');
+    var topLogo = document.getElementById('topLogo');
+    if (url) {
+      logoImg.src = url;
+      logoImg.style.display = 'block';
+      logoBox.style.display = 'none';
+      topLogo.src = url;
+      topLogo.style.display = 'block';
+    } else {
+      logoImg.style.display = 'none';
+      logoBox.style.display = 'flex';
+      topLogo.style.display = 'none';
+    }
+  }
+
+  document.getElementById('brandColorInput').addEventListener('input', function() {
+    document.getElementById('brandColorHex').textContent = this.value;
+  });
+
+  function saveIdentity() {
+    var logoUrl    = (document.getElementById('logoUrlInput').value || '').trim() || null;
+    var tagline    = document.getElementById('taglineInput').value.trim();
+    var brandColor = document.getElementById('brandColorInput').value;
+    var msgEl      = document.getElementById('identityMsg');
+    var data = { tagline: tagline, brandColor: brandColor };
+    if (logoUrl) data.logoUrl = logoUrl;
+    db.ref('teams/' + TEAM_ID + '/identity').update(data)
+      .then(function() { showMsg(msgEl, '✓ Identity saved!', 'var(--green)'); })
+      .catch(function(e) { showMsg(msgEl, 'Error: ' + e.message, 'var(--red)'); });
   }
 
   // ── BuzzNet tab ───────────────────────────────────────────
@@ -686,6 +798,9 @@ if (!TEAM_ID) {
       teamId:      TEAM_ID,
       teamTag:     '#' + (teamData.brandName || '').replace(/\s+/g, ''),
       imageUrl:    image || null,
+      logoUrl:     identityData.logoUrl    || null,
+      brandColor:  identityData.brandColor || null,
+      tagline:     identityData.tagline    || null,
       week:        week,
       likes:       Math.floor(Math.random() * 600) + 80,
       timestamp:   Date.now(),

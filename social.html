@@ -369,16 +369,36 @@ function buildPostCard(post, featured = false) {
   const rts   = Math.floor(likes * 0.3);
   const ago   = timeAgo(post.timestamp);
 
+  // Resolve logo: prefer live team identity data over post snapshot
+  const teamIdentity = post.teamId ? (teamsData[post.teamId]?.identity || {}) : {};
+  const logoUrl      = teamIdentity.logoUrl   || post.logoUrl   || null;
+  const brandColor   = teamIdentity.brandColor || post.brandColor || null;
+  const tagline      = teamIdentity.tagline    || post.tagline   || null;
+
+  const avatarContent = logoUrl
+    ? `<img src="${esc(logoUrl)}" style="width:100%;height:100%;object-fit:contain;border-radius:6px;" onerror="this.parentElement.innerHTML='${post.avatar || '🏢'}';">`
+    : (post.avatar || '👤');
+  const avatarBgColor = logoUrl
+    ? 'var(--bg3);border:1px solid var(--border)'
+    : avatarBg(post.accountType);
+  const taglineHtml = tagline
+    ? `<div style="font-family:var(--sans);font-size:10px;color:var(--muted);font-style:italic;margin-top:1px">${esc(tagline)}</div>`
+    : '';
+  const accentStyle = brandColor
+    ? `border-left:3px solid ${esc(brandColor)};`
+    : '';
+
   const imgHtml = post.imageUrl
     ? `<img src="${esc(post.imageUrl)}" alt="" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:10px;display:block" onerror="this.style.display='none'">`
     : '';
 
-  return `<div class="post-card${featured ? ' featured' : ''}">
+  return `<div class="post-card${featured ? ' featured' : ''}" style="${accentStyle}">
     <div class="post-header">
-      <div class="post-avatar" style="background:${avatarBg(post.accountType)}">${post.avatar || '👤'}</div>
+      <div class="post-avatar" style="background:${avatarBgColor}">${avatarContent}</div>
       <div class="post-meta">
         <div class="post-name">${esc(post.displayName || 'Anonymous')}</div>
         <div class="post-handle">${esc(post.handle || '@unknown')}</div>
+        ${taglineHtml}
       </div>
       <div class="post-type-badge ${badge.cls}">${badge.label}</div>
     </div>

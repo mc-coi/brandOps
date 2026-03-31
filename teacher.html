@@ -491,6 +491,13 @@ textarea { resize: vertical; min-height: 60px; }
 
           <div id="scorePreview" style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:16px"></div>
 
+          <div style="margin-bottom:16px">
+            <label style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">
+              Media URL <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional — YouTube, Drive, Slides, etc.)</span>
+            </label>
+            <input id="scoreMediaUrl" type="url" placeholder="https://…" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:7px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;margin-top:4px">
+          </div>
+
           <button class="btn success" style="width:auto" onclick="applyScore()">✓ Apply Score & Stat Boosts</button>
         </div>
 
@@ -1194,6 +1201,8 @@ function applyScore() {
   const effect   = GAME_CONFIG.scoreEffects[selectedScore];
   const newStats = GameEngine.applyDeliverableScore(team.stats, delKey, selectedScore);
 
+  const mediaUrl = (document.getElementById('scoreMediaUrl').value || '').trim() || null;
+
   const logEntry = {
     week: seasonData.currentWeek || 1,
     deliverable: delKey,
@@ -1202,6 +1211,7 @@ function applyScore() {
     points: effect.points,
     timestamp: Date.now(),
   };
+  if (mediaUrl) logEntry.mediaUrl = mediaUrl;
 
   const updates = {};
   updates[`teams/${teamId}/stats`] = newStats;
@@ -1210,6 +1220,7 @@ function applyScore() {
 
   db.ref().update(updates).then(() => {
     showToast(`✓ Score applied to ${team.brandName}: ${effect.label}`);
+    document.getElementById('scoreMediaUrl').value = '';
     loadScoreLog();
   });
 }
@@ -1223,6 +1234,7 @@ function loadScoreLog() {
   document.getElementById('scoreLog').innerHTML = sorted.map(e =>
     `<div style="padding:4px 0;border-bottom:1px solid var(--border)">
       Week ${e.week} · ${DELIVERABLE_TYPES[e.deliverable]?.label || e.deliverable} · <span style="color:var(--amber)">${e.label}</span> (+${e.points} pts)
+      ${e.mediaUrl ? `<a href="${e.mediaUrl}" target="_blank" style="color:var(--blue);font-size:10px;margin-left:6px">▶ media</a>` : ''}
     </div>`
   ).join('');
 }
