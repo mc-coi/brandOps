@@ -140,6 +140,26 @@ body{display:flex;flex-direction:column;font-family:var(--sans);color:var(--text
 }
 .ss-actions { display:flex;gap:22px; }
 
+/* ── Market Dispatch slide ── */
+.md-slide{width:100%;max-width:760px;background:var(--bg3);border:1px solid var(--border);padding:0;overflow:hidden;}
+.md-masthead{background:var(--bg4);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:baseline;justify-content:space-between;}
+.md-title{font-family:var(--serif);font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--amber);}
+.md-sub{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);}
+.md-dateline{font-family:var(--mono);font-size:9px;color:var(--muted);text-align:right;}
+.md-banner{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 28px;display:flex;align-items:center;gap:12px;}
+.md-phase-badge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:2px;}
+.md-week-label{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.md-body{display:grid;grid-template-columns:1fr 190px;gap:0;}
+.md-editorial{padding:24px 28px;border-right:1px solid var(--border);}
+.md-headline{font-family:var(--serif);font-size:26px;font-weight:900;line-height:1.15;margin-bottom:14px;color:var(--text);}
+.md-rule{height:2px;background:var(--amber);width:40px;margin-bottom:14px;}
+.md-story{font-family:var(--sans);font-size:13px;line-height:1.7;color:var(--text2);}
+.md-stats{padding:20px 18px;display:flex;flex-direction:column;gap:10px;}
+.md-stat-row{padding-bottom:10px;border-bottom:1px dotted var(--border);}
+.md-stat-row:last-child{border:none;}
+.md-stat-label{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+.md-stat-val{font-family:var(--serif);font-size:18px;font-weight:900;}
+
 /* ── Phase transition overlay ── */
 #phaseOverlay {
   display:none;position:fixed;inset:0;z-index:9999;
@@ -273,6 +293,33 @@ const PHASE_QUOTES = [
   "Nothing lasts forever. Rebuild. Relaunch. Prove you deserve a second chapter.",
 ];
 
+const DISPATCH_CONTENT = [
+  {
+    headline: "New Brands Enter the Arena — Identity Is Everything",
+    teaser: "The opening bell has rung on a new season. The companies that define themselves clearly in these first three weeks — with a coherent visual identity, a compelling story, and a message built for their specific audience — will carry that equity forward into the brutal middle phases.",
+  },
+  {
+    headline: "The Honeymoon Is Over — Crises Are Hitting the Market",
+    teaser: "Event cards are being drawn and volatility is climbing. The defining skill of this phase is adaptation. How a brand responds to adversity — not how it performs in calm conditions — is what separates market leaders from market victims.",
+  },
+  {
+    headline: "Super Bowl Week: One Stage, 100 Million People",
+    teaser: "The Super Bowl is the last remaining cultural moment where a brand can legitimately reach over 100 million people simultaneously. It rewards emotional storytelling over product specifications — and spectacle over information.",
+  },
+  {
+    headline: "Product Placement Phase: The Art of Invisible Advertising",
+    teaser: "Unlike a commercial — where the audience knows they're being sold to — effective product placement operates below the threshold of conscious resistance. The brand becomes part of the story, not an interruption to it.",
+  },
+  {
+    headline: "Market War Has Begun — The Gloves Are Off",
+    teaser: "Four months of market data, event history, and deliverable performance have built a clear picture of who is strong, who is struggling, and where the vulnerabilities are. Teams must now choose their weapon.",
+  },
+  {
+    headline: "Rebrand or Die: Every Brand Faces Its Final Chapter",
+    teaser: "Terminal events have fired. The brand that won you a following in Phase 1 is now a liability. What you build in the next three weeks is all that matters — and the leaderboard is still very much in play.",
+  },
+];
+
 db.ref('season').on('value', s => {
   seasonData = s.val() || {};
   checkPhaseTransition();
@@ -343,6 +390,11 @@ function rebuildSlides() {
 
   // Phase context slide (first)
   newSlides.push({ type: 'phase', phase, week });
+
+  // Market Dispatch editorial slide (second — right after phase)
+  const phaseIdx = GAME_CONFIG.phases.indexOf(phase);
+  const dispatch = DISPATCH_CONTENT[phaseIdx] || DISPATCH_CONTENT[0];
+  newSlides.push({ type: 'market_dispatch', phase, week, dispatch, teams: sorted });
 
   // One card per brand
   sorted.forEach((t, i) => newSlides.push({ type: 'brand', team: t, rank: i + 1, total: sorted.length }));
@@ -454,6 +506,61 @@ function renderCurrentSlide() {
       <div class="ec-story">${data.card.storyText}</div>
       <div class="ec-team">↳ Affecting: ${data.team.brandName}</div>
       <div class="ec-effects">${chips}</div>
+    </div>`;
+  } else if (data.type === 'market_dispatch') {
+    const d       = data.dispatch;
+    const teams   = data.teams || [];
+    const week    = data.week;
+    const vol     = seasonData.volatility || 40;
+    const phase   = data.phase;
+    const phaseNum = GAME_CONFIG.phases.indexOf(phase) + 1;
+    const topTeam = teams[0];
+    const avgScore = teams.length
+      ? Math.round(teams.reduce((s,t) => s + t.score, 0) / teams.length)
+      : '—';
+    const topStock = topTeam && topTeam.stockHistory && topTeam.stockHistory.length
+      ? GameEngine.formatDollar(topTeam.stockHistory[topTeam.stockHistory.length - 1])
+      : '—';
+    const dateStr = new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+    el.innerHTML = `<div class="md-slide">
+      <div class="md-masthead">
+        <div>
+          <div class="md-title">The Market Dispatch</div>
+          <div class="md-sub">BrandOps Financial Weekly</div>
+        </div>
+        <div class="md-dateline">${dateStr}<br>Week ${week} of 18</div>
+      </div>
+      <div class="md-banner">
+        <span class="md-phase-badge" style="background:${phase.color}22;color:${phase.color};border:1px solid ${phase.color}44">${phase.emoji} Phase ${phaseNum} · ${phase.name}</span>
+        <span class="md-week-label">Volatility: <strong style="color:${vol>70?'var(--red)':vol>40?'var(--yellow)':'var(--green)'}">${vol}</strong></span>
+        <span class="md-week-label" style="margin-left:auto">${teams.length} brands active</span>
+      </div>
+      <div class="md-body">
+        <div class="md-editorial">
+          <div class="md-headline">${d.headline}</div>
+          <div class="md-rule"></div>
+          <div class="md-story">${d.teaser}</div>
+        </div>
+        <div class="md-stats">
+          <div class="md-stat-row">
+            <div class="md-stat-label">Market Leader</div>
+            <div class="md-stat-val" style="color:var(--amber);font-size:15px">${topTeam ? topTeam.brandName : '—'}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-top:2px">${topTeam ? 'Score: ' + topTeam.score : ''}</div>
+          </div>
+          <div class="md-stat-row">
+            <div class="md-stat-label">Avg Market Score</div>
+            <div class="md-stat-val" style="color:var(--text)">${avgScore}</div>
+          </div>
+          <div class="md-stat-row">
+            <div class="md-stat-label">Top Stock Price</div>
+            <div class="md-stat-val" style="color:var(--green)">${topStock}</div>
+          </div>
+          <div class="md-stat-row">
+            <div class="md-stat-label">Volatility Index</div>
+            <div class="md-stat-val" style="color:${vol>70?'var(--red)':vol>40?'var(--yellow)':'var(--green)'}">${vol}</div>
+          </div>
+        </div>
+      </div>
     </div>`;
   } else if (data.type === 'social') {
     const p = data.post;
