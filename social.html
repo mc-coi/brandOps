@@ -67,6 +67,16 @@ header {
 }
 .stat-pill span { color: var(--amber); font-weight: 600; }
 
+.filter-tabs { display: flex; gap: 6px; }
+.filter-tab {
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 5px 14px; border-radius: 20px;
+  font-family: var(--mono); font-size: 11px; color: var(--text2);
+  cursor: pointer; transition: all 0.15s;
+}
+.filter-tab:hover { border-color: var(--amber); color: var(--amber); }
+.filter-tab.active { background: var(--amber); border-color: var(--amber); color: #000; font-weight: 700; }
+
 /* ── Layout ── */
 .layout {
   display: grid;
@@ -227,7 +237,11 @@ header {
     </div>
   </div>
   <div class="header-right">
-    <div class="stat-pill">Posts today: <span id="postCount">0</span></div>
+    <div class="filter-tabs">
+      <div class="filter-tab active" onclick="setFilter('all')" id="tab-all">All Posts</div>
+      <div class="filter-tab" onclick="setFilter('brand')" id="tab-brand">Student Brands Only</div>
+    </div>
+    <div class="stat-pill">Posts: <span id="postCount">0</span></div>
     <div class="stat-pill">Teams: <span id="teamCount">0</span></div>
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
   </div>
@@ -283,6 +297,20 @@ let teamsData  = {};
 let page       = 0;
 let postsPerPage = 3;
 let cycleTimer = null;
+let activeFilter = 'all';
+
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + f).classList.add('active');
+  page = 0;
+  renderFeed();
+}
+
+function filteredPosts() {
+  if (activeFilter === 'brand') return allPosts.filter(p => p.accountType === 'brand');
+  return allPosts;
+}
 
 const BADGE = {
   public:     { label: 'Public',     cls: 'badge-public' },
@@ -306,6 +334,7 @@ db.ref('social/posts').on('value', snap => {
     .sort((a, b) => b.timestamp - a.timestamp);
   document.getElementById('postCount').textContent = allPosts.length;
   renderFeed();
+  document.getElementById('postCount').textContent = filteredPosts().length;
   renderRecentActivity();
   updateTicker();
 });
@@ -337,17 +366,20 @@ function renderFeed() {
   const inner = document.getElementById('postsInner');
   const empty = document.getElementById('emptyState');
 
-  if (!allPosts.length) {
+  const posts = filteredPosts();
+
+  if (!posts.length) {
     inner.innerHTML = '';
     inner.appendChild(empty);
+    empty.querySelector('p').textContent = activeFilter === 'brand' ? 'No student brand posts yet...' : 'Waiting for posts...';
     document.getElementById('pageDots').innerHTML = '';
     return;
   }
 
-  const totalPages = Math.ceil(allPosts.length / postsPerPage);
+  const totalPages = Math.ceil(posts.length / postsPerPage);
   if (page >= totalPages) page = 0;
 
-  const slice = allPosts.slice(page * postsPerPage, page * postsPerPage + postsPerPage);
+  const slice = posts.slice(page * postsPerPage, page * postsPerPage + postsPerPage);
 
   inner.innerHTML = slice.map((p, i) => buildPostCard(p, i === 0 && page === 0)).join('');
 
