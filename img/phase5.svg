@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <filter id="glow5" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="bg5" cx="50%" cy="45%" r="55%">
+      <stop offset="0%"   stop-color="#9ca3af" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#0a0a0b" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="400" height="400" rx="16" fill="#0a0a0b"/>
+  <rect width="400" height="400" rx="16" fill="url(#bg5)"/>
+
+  <!-- border -->
+  <rect x="2" y="2" width="396" height="396" rx="15" fill="none"
+        stroke="#9ca3af" stroke-width="2" opacity="0.5"/>
+
+  <!-- icon -->
+  
+    <!-- dividing line -->
+    <line x1="200" y1="90" x2="200" y2="280" stroke="#9ca3af" stroke-width="2" opacity="0.3" stroke-dasharray="6 4"/>
+    <!-- left attack arrow (pointing right) -->
+    <path d="M105 175 L175 175 L175 155 L215 185 L175 215 L175 195 L105 195 Z"
+          fill="#9ca3af" opacity="0.85"/>
+    <!-- right attack arrow (pointing left) -->
+    <path d="M295 175 L225 175 L225 155 L185 185 L225 215 L225 195 L295 195 Z"
+          fill="#9ca3af" opacity="0.55"/>
+    <!-- clash impact at center -->
+    <circle cx="200" cy="185" r="14" fill="#9ca3af"/>
+    <circle cx="200" cy="185" r="8"  fill="#0a0a0b"/>
+    <!-- spark lines -->
+    <line x1="200" y1="165" x2="200" y2="150" stroke="#9ca3af" stroke-width="2.5" opacity="0.8" stroke-linecap="round"/>
+    <line x1="200" y1="205" x2="200" y2="220" stroke="#9ca3af" stroke-width="2.5" opacity="0.8" stroke-linecap="round"/>
+    <line x1="182" y1="168" x2="172" y2="157" stroke="#9ca3af" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+    <line x1="218" y1="168" x2="228" y2="157" stroke="#9ca3af" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+
+
+  <!-- phase number pill -->
+  <rect x="24" y="24" width="60" height="28" rx="5"
+        fill="#9ca3af" opacity="0.15"/>
+  <rect x="24" y="24" width="60" height="28" rx="5"
+        fill="none" stroke="#9ca3af" stroke-width="1.5" opacity="0.6"/>
+  <text x="54" y="43" font-family="'IBM Plex Mono', 'Courier New', monospace"
+        font-size="13" font-weight="600" fill="#9ca3af" text-anchor="middle"
+        letter-spacing="1">P05</text>
+
+  <!-- bottom label band -->
+  <rect x="0" y="315" width="400" height="85" rx="0"
+        fill="#13131c" opacity="0.9"/>
+  <rect x="0" y="315" width="400" height="2" fill="#9ca3af" opacity="0.4"/>
+  <rect x="0" y="384" width="400" height="16" rx="0" fill="#0a0a0b"/>
+  <rect x="0" y="384" width="400" height="16" rx="16" fill="#13131c" opacity="0.9"/>
+
+  <!-- phase name -->
+  <text x="24" y="347" font-family="'IBM Plex Sans', 'Arial', sans-serif"
+        font-size="19" font-weight="700" fill="#9ca3af" letter-spacing="-0.3">Market War</text>
+
+  <!-- weeks label -->
+  <text x="24" y="369" font-family="'IBM Plex Mono', 'Courier New', monospace"
+        font-size="12" fill="#6b7280" letter-spacing="0.5">Weeks 14–15</text>
+
+  <!-- corner accent -->
+  <circle cx="376" cy="24" r="16" fill="#9ca3af" opacity="0.12"/>
+  <text x="376" y="29" font-family="'IBM Plex Sans', sans-serif"
+        font-size="18" text-anchor="middle" fill="#9ca3af" opacity="0.8">5</text>
+</svg>

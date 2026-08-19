@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <filter id="glow2" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="bg2" cx="50%" cy="45%" r="55%">
+      <stop offset="0%"   stop-color="#ef4444" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#0a0a0b" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="400" height="400" rx="16" fill="#0a0a0b"/>
+  <rect width="400" height="400" rx="16" fill="url(#bg2)"/>
+
+  <!-- border -->
+  <rect x="2" y="2" width="396" height="396" rx="15" fill="none"
+        stroke="#ef4444" stroke-width="2" opacity="0.5"/>
+
+  <!-- icon -->
+  
+    <!-- outer pressure ring -->
+    <circle cx="200" cy="185" r="95" fill="none" stroke="#ef4444" stroke-width="3" opacity="0.25" stroke-dasharray="8 5"/>
+    <circle cx="200" cy="185" r="72" fill="none" stroke="#ef4444" stroke-width="3" opacity="0.45"/>
+    <!-- lightning bolt -->
+    <path d="M215 100 L185 185 L205 185 L182 275 L220 175 L198 175 Z"
+          fill="#ef4444" stroke="none"/>
+    <!-- glow core -->
+    <path d="M215 100 L185 185 L205 185 L182 275 L220 175 L198 175 Z"
+          fill="#ef4444" opacity="0.3" filter="url(#glow2)"/>
+
+
+  <!-- phase number pill -->
+  <rect x="24" y="24" width="60" height="28" rx="5"
+        fill="#ef4444" opacity="0.15"/>
+  <rect x="24" y="24" width="60" height="28" rx="5"
+        fill="none" stroke="#ef4444" stroke-width="1.5" opacity="0.6"/>
+  <text x="54" y="43" font-family="'IBM Plex Mono', 'Courier New', monospace"
+        font-size="13" font-weight="600" fill="#ef4444" text-anchor="middle"
+        letter-spacing="1">P02</text>
+
+  <!-- bottom label band -->
+  <rect x="0" y="315" width="400" height="85" rx="0"
+        fill="#13131c" opacity="0.9"/>
+  <rect x="0" y="315" width="400" height="2" fill="#ef4444" opacity="0.4"/>
+  <rect x="0" y="384" width="400" height="16" rx="0" fill="#0a0a0b"/>
+  <rect x="0" y="384" width="400" height="16" rx="16" fill="#13131c" opacity="0.9"/>
+
+  <!-- phase name -->
+  <text x="24" y="347" font-family="'IBM Plex Sans', 'Arial', sans-serif"
+        font-size="19" font-weight="700" fill="#ef4444" letter-spacing="-0.3">Market Pressure</text>
+
+  <!-- weeks label -->
+  <text x="24" y="369" font-family="'IBM Plex Mono', 'Courier New', monospace"
+        font-size="12" fill="#6b7280" letter-spacing="0.5">Weeks 4–7</text>
+
+  <!-- corner accent -->
+  <circle cx="376" cy="24" r="16" fill="#ef4444" opacity="0.12"/>
+  <text x="376" y="29" font-family="'IBM Plex Sans', sans-serif"
+        font-size="18" text-anchor="middle" fill="#ef4444" opacity="0.8">2</text>
+</svg>

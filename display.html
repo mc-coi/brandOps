@@ -73,6 +73,7 @@ body{display:flex;flex-direction:column;font-family:var(--sans);color:var(--text
 
 /* ── Phase slide ── */
 .phase-slide-inner{text-align:center;padding:60px;}
+.ps-icon{width:160px;height:160px;margin:0 auto 20px;display:block;border-radius:16px;}
 .ps-emoji{font-size:80px;margin-bottom:20px;}
 .ps-label{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
 .ps-name{font-family:var(--serif);font-size:56px;font-weight:900;margin-bottom:16px;}
@@ -170,6 +171,7 @@ body{display:flex;flex-direction:column;font-family:var(--sans);color:var(--text
 @keyframes ovOut{from{opacity:1;}to{opacity:0;}}
 #phaseOverlay.hiding{animation:ovOut .5s ease forwards;}
 #phaseOverlay .po-emoji{font-size:100px;line-height:1;margin-bottom:20px;}
+#phaseOverlay .po-icon{width:180px;height:180px;border-radius:20px;margin-bottom:20px;display:block;}
 #phaseOverlay .po-label{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;opacity:.7;margin-bottom:10px;}
 #phaseOverlay .po-name{font-family:var(--serif);font-size:68px;font-weight:900;line-height:1;margin-bottom:24px;}
 #phaseOverlay .po-quote{font-family:var(--sans);font-size:20px;font-style:italic;opacity:.8;max-width:560px;line-height:1.6;}
@@ -266,7 +268,7 @@ body{display:flex;flex-direction:column;font-family:var(--sans);color:var(--text
 
 <!-- Phase overlay -->
 <div id="phaseOverlay">
-  <div class="po-emoji" id="poEmoji">🔵</div>
+  <img class="po-icon" id="poIcon" src="img/phase1.svg" alt="">
   <div class="po-label" id="poLabel">Phase 1 Begins</div>
   <div class="po-name"  id="poName">Brand Launch</div>
   <div class="po-quote" id="poQuote">—</div>
@@ -451,8 +453,11 @@ function renderCurrentSlide() {
   el.className = 'slide active';
 
   if (data.type === 'phase') {
+    const phaseIconHtml = data.phase.icon
+      ? `<img src="${data.phase.icon}" class="ps-icon" alt="${data.phase.name}">`
+      : `<div class="ps-emoji">${data.phase.emoji}</div>`;
     el.innerHTML = `<div class="phase-slide-inner">
-      <div class="ps-emoji">${data.phase.emoji}</div>
+      ${phaseIconHtml}
       <div class="ps-label">Phase ${GAME_CONFIG.phases.indexOf(data.phase)+1} · Week ${data.week} of 18</div>
       <div class="ps-name" style="color:${data.phase.color}">${data.phase.name}</div>
       <div class="ps-desc">${phaseDesc(data.phase.name)}</div>
@@ -714,7 +719,8 @@ function checkPhaseTransition() {
 
   const quote = PHASE_QUOTES[(pt.phase - 1) % PHASE_QUOTES.length];
   const overlay = document.getElementById('phaseOverlay');
-  document.getElementById('poEmoji').textContent = pt.emoji || '🎯';
+  const iconEl  = document.getElementById('poIcon');
+  if (iconEl) iconEl.src = 'img/phase' + pt.phase + '.svg';
   document.getElementById('poLabel').textContent = 'Phase ' + pt.phase + ' Begins';
   document.getElementById('poName').textContent  = pt.name;
   document.getElementById('poQuote').textContent = quote;

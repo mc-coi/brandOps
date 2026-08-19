@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <filter id="glow3" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="bg3" cx="50%" cy="45%" r="55%">
+      <stop offset="0%"   stop-color="#eab308" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#0a0a0b" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="400" height="400" rx="16" fill="#0a0a0b"/>
+  <rect width="400" height="400" rx="16" fill="url(#bg3)"/>
+
+  <!-- border -->
+  <rect x="2" y="2" width="396" height="396" rx="15" fill="none"
+        stroke="#eab308" stroke-width="2" opacity="0.5"/>
+
+  <!-- icon -->
+  
+    <line x1="200.0" y1="147.0" x2="200.0" y2="85.0" stroke="#eab308" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+    <line x1="214.5" y1="149.9" x2="227.6" y2="118.5" stroke="#eab308" stroke-width="1.5" opacity="0.45" stroke-linecap="round"/>
+    <line x1="226.9" y1="158.1" x2="270.7" y2="114.3" stroke="#eab308" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+    <line x1="235.1" y1="170.5" x2="266.5" y2="157.4" stroke="#eab308" stroke-width="1.5" opacity="0.45" stroke-linecap="round"/>
+    <line x1="238.0" y1="185.0" x2="300.0" y2="185.0" stroke="#eab308" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+    <line x1="235.1" y1="199.5" x2="266.5" y2="212.6" stroke="#eab308" stroke-width="1.5" opacity="0.45" stroke-linecap="round"/>
+    <line x1="226.9" y1="211.9" x2="270.7" y2="255.7" stroke="#eab308" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+    <line x1="214.5" y1="220.1" x2="227.6" y2="251.5" stroke="#eab308" stroke-width="1.5" opacity="0.45" stroke-linecap="round"/>
+    <line x1="200.0" y1="223.0" x2="200.0" y2="285.0" stroke="#eab308" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+    <line x1="185.5" y1="220.1" x2="172.4" y2="251.5" stroke="#eab308" stroke-width="1.5" opacity="0.45" stroke-linecap="round"/>
+    <line x1="173.1" y1="211.9" x2="129.3" y2="255.7" stroke="#eab308" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+    <line x1="164.9" y1="199.5" x2="133.5" y2="212.6" stroke="#eab308" stroke-width="1.5" opacity="0.45" stroke-linecap="round"/>
+    <line x1="162.0" y1="185.0" x2="100.0" y2="185.0" stroke="#eab308" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+    <line x1="164.9" y1="170.5" x2="133.5" y2="157.4" stroke="#eab308" stroke-width="1.5" opacity="0.45" stroke-linecap="round"/>
+    <line x1="173.1" y1="158.1" x2="129.3" y2="114.3" stroke="#eab308" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+    <line x1="185.5" y1="149.9" x2="172.4" y2="118.5" stroke="#eab308" stroke-width="1.5" opacity="0.45" stroke-linecap="round"/>
+    
+    <!-- center star -->
+    <circle cx="200" cy="185" r="28" fill="#eab308"/>
+    <circle cx="200" cy="185" r="16" fill="#13131c"/>
+    <circle cx="200" cy="185" r="7"  fill="#eab308"/>
+
+
+  <!-- phase number pill -->
+  <rect x="24" y="24" width="60" height="28" rx="5"
+        fill="#eab308" opacity="0.15"/>
+  <rect x="24" y="24" width="60" height="28" rx="5"
+        fill="none" stroke="#eab308" stroke-width="1.5" opacity="0.6"/>
+  <text x="54" y="43" font-family="'IBM Plex Mono', 'Courier New', monospace"
+        font-size="13" font-weight="600" fill="#eab308" text-anchor="middle"
+        letter-spacing="1">P03</text>
+
+  <!-- bottom label band -->
+  <rect x="0" y="315" width="400" height="85" rx="0"
+        fill="#13131c" opacity="0.9"/>
+  <rect x="0" y="315" width="400" height="2" fill="#eab308" opacity="0.4"/>
+  <rect x="0" y="384" width="400" height="16" rx="0" fill="#0a0a0b"/>
+  <rect x="0" y="384" width="400" height="16" rx="16" fill="#13131c" opacity="0.9"/>
+
+  <!-- phase name -->
+  <text x="24" y="347" font-family="'IBM Plex Sans', 'Arial', sans-serif"
+        font-size="19" font-weight="700" fill="#eab308" letter-spacing="-0.3">Super Bowl</text>
+
+  <!-- weeks label -->
+  <text x="24" y="369" font-family="'IBM Plex Mono', 'Courier New', monospace"
+        font-size="12" fill="#6b7280" letter-spacing="0.5">Weeks 8–10</text>
+
+  <!-- corner accent -->
+  <circle cx="376" cy="24" r="16" fill="#eab308" opacity="0.12"/>
+  <text x="376" y="29" font-family="'IBM Plex Sans', sans-serif"
+        font-size="18" text-anchor="middle" fill="#eab308" opacity="0.8">3</text>
+</svg>

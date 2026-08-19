@@ -488,7 +488,9 @@ function renderAll() {
   const week  = seasonData.currentWeek || 1;
   const phase = GameEngine.getPhase(week);
   document.getElementById('currentWeek').textContent = week;
-  document.getElementById('phaseBadge').textContent  = `${phase.emoji} Phase ${GAME_CONFIG.phases.indexOf(phase)+1}: ${phase.name}`;
+  document.getElementById('phaseBadge').innerHTML = phase.icon
+    ? `<img src="${phase.icon}" style="width:18px;height:18px;border-radius:3px;vertical-align:middle;margin-right:6px;">Phase ${GAME_CONFIG.phases.indexOf(phase)+1}: ${phase.name}`
+    : `${phase.emoji} Phase ${GAME_CONFIG.phases.indexOf(phase)+1}: ${phase.name}`;
 
   // Volatility
   const vol = seasonData.volatility || 0;
@@ -651,7 +653,8 @@ function checkPhaseTransition(season) {
   var overlay = document.getElementById('phaseOverlay');
   if (!overlay) return;
 
-  document.getElementById('poEmoji').textContent = pt.emoji || '🎯';
+  const poIcon = document.getElementById('poIcon');
+  if (poIcon) poIcon.src = 'img/phase' + pt.phase + '.svg';
   document.getElementById('poLabel').textContent = 'Phase ' + pt.phase + ' Begins';
   document.getElementById('poName').textContent  = pt.name;
   document.getElementById('poQuote').textContent = quote;
@@ -678,7 +681,7 @@ function dismissOverlay() {
 
 <!-- Phase Transition Overlay -->
 <div id="phaseOverlay">
-  <div class="po-emoji" id="poEmoji">🔵</div>
+  <img class="po-icon" id="poIcon" src="img/phase1.svg" alt="" style="width:160px;height:160px;border-radius:16px;margin-bottom:20px;display:block;">
   <div class="po-label" id="poLabel">Phase 1 Begins</div>
   <div class="po-name"  id="poName">Brand Launch</div>
   <div class="po-quote" id="poQuote">—</div>

@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <filter id="glow4" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="bg4" cx="50%" cy="45%" r="55%">
+      <stop offset="0%"   stop-color="#14b8a6" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#0a0a0b" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="400" height="400" rx="16" fill="#0a0a0b"/>
+  <rect width="400" height="400" rx="16" fill="url(#bg4)"/>
+
+  <!-- border -->
+  <rect x="2" y="2" width="396" height="396" rx="15" fill="none"
+        stroke="#14b8a6" stroke-width="2" opacity="0.5"/>
+
+  <!-- icon -->
+  
+    <!-- board body -->
+    <rect x="118" y="145" width="164" height="120" rx="6" fill="#13131c" stroke="#14b8a6" stroke-width="3"/>
+    <!-- clapper top -->
+    <rect x="118" y="118" width="164" height="36" rx="6" fill="#14b8a6"/>
+    <!-- clapper stripes -->
+    <rect x="118" y="118" width="164" height="36" rx="6" fill="none" stroke="#0a0a0b" stroke-width="0"/>
+    <line x1="152" y1="118" x2="135" y2="154" stroke="#0a0a0b" stroke-width="10" stroke-linecap="butt"/>
+    <line x1="186" y1="118" x2="169" y2="154" stroke="#0a0a0b" stroke-width="10"/>
+    <line x1="220" y1="118" x2="203" y2="154" stroke="#0a0a0b" stroke-width="10"/>
+    <line x1="254" y1="118" x2="237" y2="154" stroke="#0a0a0b" stroke-width="10"/>
+    <!-- hinge -->
+    <circle cx="130" cy="120" r="8" fill="#13131c" stroke="#14b8a6" stroke-width="2.5"/>
+    <circle cx="270" cy="120" r="8" fill="#13131c" stroke="#14b8a6" stroke-width="2.5"/>
+    <!-- text lines on board -->
+    <rect x="134" y="167" width="68" height="5" rx="2.5" fill="#14b8a6" opacity="0.7"/>
+    <rect x="134" y="180" width="48" height="5" rx="2.5" fill="#14b8a6" opacity="0.4"/>
+    <!-- aperture/lens on right -->
+    <circle cx="230" cy="195" r="30" fill="none" stroke="#14b8a6" stroke-width="2.5" opacity="0.6"/>
+    <circle cx="230" cy="195" r="18" fill="none" stroke="#14b8a6" stroke-width="2" opacity="0.9"/>
+    <circle cx="230" cy="195" r="7"  fill="#14b8a6"/>
+
+
+  <!-- phase number pill -->
+  <rect x="24" y="24" width="60" height="28" rx="5"
+        fill="#14b8a6" opacity="0.15"/>
+  <rect x="24" y="24" width="60" height="28" rx="5"
+        fill="none" stroke="#14b8a6" stroke-width="1.5" opacity="0.6"/>
+  <text x="54" y="43" font-family="'IBM Plex Mono', 'Courier New', monospace"
+        font-size="13" font-weight="600" fill="#14b8a6" text-anchor="middle"
+        letter-spacing="1">P04</text>
+
+  <!-- bottom label band -->
+  <rect x="0" y="315" width="400" height="85" rx="0"
+        fill="#13131c" opacity="0.9"/>
+  <rect x="0" y="315" width="400" height="2" fill="#14b8a6" opacity="0.4"/>
+  <rect x="0" y="384" width="400" height="16" rx="0" fill="#0a0a0b"/>
+  <rect x="0" y="384" width="400" height="16" rx="16" fill="#13131c" opacity="0.9"/>
+
+  <!-- phase name -->
+  <text x="24" y="347" font-family="'IBM Plex Sans', 'Arial', sans-serif"
+        font-size="19" font-weight="700" fill="#14b8a6" letter-spacing="-0.3">Product Placement</text>
+
+  <!-- weeks label -->
+  <text x="24" y="369" font-family="'IBM Plex Mono', 'Courier New', monospace"
+        font-size="12" fill="#6b7280" letter-spacing="0.5">Weeks 11–13</text>
+
+  <!-- corner accent -->
+  <circle cx="376" cy="24" r="16" fill="#14b8a6" opacity="0.12"/>
+  <text x="376" y="29" font-family="'IBM Plex Sans', sans-serif"
+        font-size="18" text-anchor="middle" fill="#14b8a6" opacity="0.8">4</text>
+</svg>

@@ -465,7 +465,9 @@ if (!TEAM_ID) {
     document.getElementById('topBrandName').textContent = teamData.brandName;
     document.getElementById('topBrandTag').textContent  = (teamData.industry||'') + ' · ' + (teamData.country||'') + ' · ' + (teamData.targetDemo||'');
     document.getElementById('topWeek').textContent      = week;
-    document.getElementById('topPhase').textContent     = phase.emoji + ' ' + phase.name;
+    document.getElementById('topPhase').innerHTML = phase.icon
+      ? `<img src="${phase.icon}" style="width:18px;height:18px;border-radius:3px;vertical-align:middle;margin-right:5px;">${phase.name}`
+      : phase.emoji + ' ' + phase.name;
 
     // Newspaper link
     document.getElementById('paperLink').href = 'newspaper.html?team=' + TEAM_ID + '&week=' + week;
@@ -529,7 +531,9 @@ if (!TEAM_ID) {
     const label = document.getElementById('phaseLabel');
     const track = document.getElementById('phaseTrack');
     const phase = GameEngine.getPhase(week);
-    label.textContent = phase.emoji + ' ' + phase.name + ' · Week ' + week + ' of 18';
+    label.innerHTML = phase.icon
+      ? `<img src="${phase.icon}" style="width:16px;height:16px;border-radius:2px;vertical-align:middle;margin-right:5px;">${phase.name} · Week ${week} of 18`
+      : phase.emoji + ' ' + phase.name + ' · Week ' + week + ' of 18';
     track.innerHTML = Array.from({length: 18}, (_, i) => {
       const w = i + 1;
       const cls = w < week ? 'done' : w === week ? 'current' : '';
@@ -876,7 +880,8 @@ function checkPhaseTransition(season) {
   var overlay = document.getElementById('phaseOverlay');
   if (!overlay) return;
 
-  document.getElementById('poEmoji').textContent = pt.emoji || '🎯';
+  const poIcon = document.getElementById('poIcon');
+  if (poIcon) poIcon.src = 'img/phase' + pt.phase + '.svg';
   document.getElementById('poLabel').textContent = 'Phase ' + pt.phase + ' Begins';
   document.getElementById('poName').textContent  = pt.name;
   document.getElementById('poQuote').textContent = quote;
@@ -903,7 +908,7 @@ function dismissOverlay() {
 
 <!-- Phase Transition Overlay -->
 <div id="phaseOverlay">
-  <div class="po-emoji" id="poEmoji">🔵</div>
+  <img class="po-icon" id="poIcon" src="img/phase1.svg" alt="" style="width:160px;height:160px;border-radius:16px;margin-bottom:20px;display:block;">
   <div class="po-label" id="poLabel">Phase 1 Begins</div>
   <div class="po-name"  id="poName">Brand Launch</div>
   <div class="po-quote" id="poQuote">—</div>

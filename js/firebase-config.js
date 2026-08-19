@@ -13,12 +13,12 @@ const FIREBASE_CONFIG = {
 const GAME_CONFIG = {
   maxWeeks: 18,
   phases: [
-    { name: "Brand Launch",        weeks: [1, 3],  color: "#3b82f6", emoji: "🔵" },
-    { name: "Market Pressure",     weeks: [4, 7],  color: "#ef4444", emoji: "🔴" },
-    { name: "Super Bowl Campaign", weeks: [8, 10], color: "#eab308", emoji: "🟡" },
-    { name: "Product Placement",   weeks: [11,13], color: "#22c55e", emoji: "🟢" },
-    { name: "Market War",          weeks: [14,15], color: "#6b7280", emoji: "⚫" },
-    { name: "Rebrand or Die",      weeks: [16,18], color: "#a855f7", emoji: "🟣" },
+    { name: "Brand Launch",        weeks: [1, 3],  color: "#3b82f6", emoji: "🔵", icon: "img/phase1.svg" },
+    { name: "Market Pressure",     weeks: [4, 7],  color: "#ef4444", emoji: "🔴", icon: "img/phase2.svg" },
+    { name: "Super Bowl Campaign", weeks: [8, 10], color: "#eab308", emoji: "🟡", icon: "img/phase3.svg" },
+    { name: "Product Placement",   weeks: [11,13], color: "#22c55e", emoji: "🟢", icon: "img/phase4.svg" },
+    { name: "Market War",          weeks: [14,15], color: "#6b7280", emoji: "⚫", icon: "img/phase5.svg" },
+    { name: "Rebrand or Die",      weeks: [16,18], color: "#a855f7", emoji: "🟣", icon: "img/phase6.svg" },
   ],
   statMax: 100,
   statMin: 0,
