@@ -874,6 +874,11 @@ function initApp(passedDb) {
     renderBuzznetGradingCard();
   });
 
+  db.ref('social/posts').on('value', snap => {
+    postsData = snap.val() || {};
+    renderBuzznetGradingCard();
+  });
+
   // Nav
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -1250,10 +1255,6 @@ function applyBuzznetGrade(teamId, score) {
 }
 
 let postsData = {};
-db.ref('social/posts').on('value', snap => {
-  postsData = snap.val() || {};
-  renderBuzznetGradingCard();
-});
 
 // ── Scoring ───────────────────────────────────────────────
 let selectedScore = null;
