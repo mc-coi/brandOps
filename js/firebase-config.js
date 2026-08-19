@@ -46,6 +46,7 @@ const DELIVERABLE_TYPES = {
   rebrand_logo:       { label: "Rebrand Logo",            affects: ["reputation", "innovation", "sentiment"], phase: 6 },
   relaunch_pitch:     { label: "Investor Pitch Deck",     affects: ["budget", "reputation", "demand"],        phase: 6 },
   shareholder_letter: { label: "Shareholder Letter",      affects: ["reputation", "budget"],                  phase: 0 },
+  buzznet_posts:      { label: "BuzzNet Posts (Weekly)",  affects: ["reputation", "sentiment"],               phase: 0 },
 };
 
 const BRAND_DATA = {
