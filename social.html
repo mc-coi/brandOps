@@ -94,8 +94,8 @@ header {
 }
 .feed-label::after { content:''; flex:1; height:1px; background:var(--border); }
 
-.posts-window { flex: 1; overflow: hidden; position: relative; }
-.posts-inner { display: flex; flex-direction: column; gap: 12px; }
+.posts-window { flex: 1; overflow-y: auto; position: relative; }
+.posts-inner { display: flex; flex-direction: column; gap: 12px; padding-bottom: 12px; }
 
 /* Post card */
 .post-card {
@@ -376,21 +376,17 @@ function renderFeed() {
     return;
   }
 
-  const totalPages = Math.ceil(posts.length / postsPerPage);
-  if (page >= totalPages) page = 0;
+  inner.innerHTML = posts.map((p, i) => buildPostCard(p, i === 0)).join('');
 
-  const slice = posts.slice(page * postsPerPage, page * postsPerPage + postsPerPage);
-
-  inner.innerHTML = slice.map((p, i) => buildPostCard(p, i === 0 && page === 0)).join('');
-
-  // Animate in
+  // Animate in (stagger only first 6 to keep it snappy)
   requestAnimationFrame(() => {
     inner.querySelectorAll('.post-card').forEach((card, i) => {
-      setTimeout(() => card.classList.add('visible'), i * 80);
+      if (i < 6) setTimeout(() => card.classList.add('visible'), i * 60);
+      else card.classList.add('visible');
     });
   });
 
-  renderDots(totalPages);
+  document.getElementById('pageDots').innerHTML = '';
 }
 
 function buildPostCard(post, featured = false) {
@@ -480,26 +476,7 @@ function updateTicker() {
   document.getElementById('tickerInner').textContent = items.join('   ·   ');
 }
 
-// ── Auto-cycle pages ───────────────────────────────────────
-function startCycle() {
-  clearInterval(cycleTimer);
-  cycleTimer = setInterval(() => {
-    if (!allPosts.length) return;
-    const totalPages = Math.ceil(allPosts.length / postsPerPage);
-    page = (page + 1) % totalPages;
-    renderFeed();
-  }, 8000);
-}
-startCycle();
-
-// Click to advance
-document.getElementById('postsWindow').addEventListener('click', () => {
-  if (!allPosts.length) return;
-  const totalPages = Math.ceil(allPosts.length / postsPerPage);
-  page = (page + 1) % totalPages;
-  renderFeed();
-  startCycle(); // reset timer
-});
+// Auto-cycle removed — feed is now fully scrollable
 
 // ── Utilities ──────────────────────────────────────────────
 function timeAgo(ts) {
