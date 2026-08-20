@@ -481,6 +481,20 @@ textarea { resize: vertical; min-height: 60px; }
         </div>
         <!-- ── / Weekly BuzzNet Grading ───────────────────────── -->
 
+        <!-- ── Weekly Journal Grading ────────────────────────── -->
+        <div class="card" id="journalGradingCard">
+          <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>📓 Weekly Journal Grades</span>
+            <span id="journalWeekLabel" style="font-family:var(--mono);font-size:11px;color:var(--muted)"></span>
+          </div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.6">
+            One grade per team per week. Affects Reputation &amp; Innovation.
+          </p>
+          <div id="journalPromptPreview" style="font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--bg3);padding:8px 10px;border-radius:4px;margin-bottom:14px;line-height:1.5"></div>
+          <div id="journalTeamRows" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+        <!-- ── / Weekly Journal Grading ──────────────────────── -->
+
         <div class="card">
           <div class="grid-2">
             <div>
@@ -878,6 +892,7 @@ function initApp(passedDb) {
     seasonData = snap.val() || { currentWeek: 1, volatility: 40, activeCards: {} };
     refreshSeasonUI();
     renderBuzznetGradingCard();
+    renderJournalGradingCard();
   });
 
   db.ref('teams').on('value', snap => {
@@ -885,6 +900,7 @@ function initApp(passedDb) {
     refreshTeamUI();
     refreshTeamSelects();
     renderBuzznetGradingCard();
+    renderJournalGradingCard();
   });
 
   db.ref('social/posts').on('value', snap => {
@@ -1284,6 +1300,79 @@ function applyBuzznetGrade(teamId, score) {
 }
 
 let postsData = {};
+
+// ── Weekly Journal Grading ────────────────────────────────
+function renderJournalGradingCard() {
+  const week = seasonData.currentWeek || 1;
+  document.getElementById('journalWeekLabel').textContent = 'Week ' + week;
+
+  const prompt = JOURNAL_PROMPTS[week] || 'Open reflection.';
+  document.getElementById('journalPromptPreview').textContent = 'Prompt: ' + prompt;
+
+  const rows = document.getElementById('journalTeamRows');
+  const teams = Object.entries(teamsData);
+  if (!teams.length) { rows.innerHTML = '<div style="font-family:var(--mono);font-size:12px;color:var(--muted)">No teams yet.</div>'; return; }
+
+  rows.innerHTML = teams.map(([tid, team]) => {
+    const entry = (team.journalEntries || {})[week];
+    const log = Object.values(team.scoreLog || {});
+    const alreadyGraded = log.find(e => e.deliverable === 'journal_entry' && e.week === week);
+
+    const entryPreview = entry
+      ? `<div style="padding:5px 8px;background:var(--bg3);border-radius:4px;font-size:11px;color:var(--text2);line-height:1.5;font-family:var(--mono)">${(entry.text||'').slice(0,200)}${entry.text&&entry.text.length>200?'…':''}</div>`
+      : '<div style="font-size:11px;color:var(--muted);font-family:var(--mono);font-style:italic">No entry submitted yet</div>';
+
+    const gradedBadge = alreadyGraded
+      ? `<span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)">✓ Graded · ${alreadyGraded.label}</span>`
+      : '';
+
+    const btnStyle = (score) => {
+      const colors = {1:'rgba(239,68,68,0.15)',3:'rgba(245,166,35,0.15)',5:'rgba(34,197,94,0.15)'};
+      const text   = {1:'#ef4444',3:'#f5a623',5:'#22c55e'};
+      return `background:${colors[score]};color:${text[score]};border:1px solid ${text[score]}40;padding:4px 12px;border-radius:6px;font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer`;
+    };
+
+    return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-weight:600;font-size:13px">${team.brandName || 'Unnamed'} <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">${entry?'Entry submitted':'No entry'}</span></div>
+        ${gradedBadge}
+      </div>
+      <div style="margin-bottom:10px">${entryPreview}</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Grade:</span>
+        <button style="${btnStyle(1)}" onclick="applyJournalGrade('${tid}',1)">1 — Below Basic</button>
+        <button style="${btnStyle(3)}" onclick="applyJournalGrade('${tid}',3)">3 — Proficient</button>
+        <button style="${btnStyle(5)}" onclick="applyJournalGrade('${tid}',5)">5 — Advanced</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function applyJournalGrade(teamId, score) {
+  const team   = teamsData[teamId];
+  if (!team) return;
+  const week   = seasonData.currentWeek || 1;
+  const effect = GAME_CONFIG.scoreEffects[score];
+  const newStats = GameEngine.applyDeliverableScore(team.stats, 'journal_entry', score);
+
+  const logEntry = {
+    week,
+    deliverable: 'journal_entry',
+    score,
+    label: effect.label,
+    points: effect.points,
+    timestamp: Date.now(),
+  };
+
+  const updates = {};
+  updates[`teams/${teamId}/stats`] = newStats;
+  updates[`teams/${teamId}/totalPoints`] = (team.totalPoints || 0) + effect.points;
+  updates[`teams/${teamId}/scoreLog/${Date.now()}`] = logEntry;
+
+  db.ref().update(updates).then(() => {
+    showToast(`✓ Journal grade applied to ${team.brandName}: ${effect.label}`);
+  });
+}
 
 // ── Scoring ───────────────────────────────────────────────
 let selectedScore = null;

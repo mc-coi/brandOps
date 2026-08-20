@@ -47,6 +47,7 @@ const DELIVERABLE_TYPES = {
   relaunch_pitch:     { label: "Investor Pitch Deck",     affects: ["budget", "reputation", "demand"],        phase: 6 },
   shareholder_letter: { label: "Shareholder Letter",      affects: ["reputation", "budget"],                  phase: 0 },
   buzznet_posts:      { label: "BuzzNet Posts (Weekly)",  affects: ["reputation", "sentiment"],               phase: 0 },
+  journal_entry:      { label: "Journal Entry (Weekly)",  affects: ["reputation", "innovation"],              phase: 0 },
 };
 
 const BRAND_DATA = {
