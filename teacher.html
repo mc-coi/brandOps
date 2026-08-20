@@ -713,6 +713,19 @@ textarea { resize: vertical; min-height: 60px; }
                 </div>
               </div>
 
+              <div style="display:flex;gap:12px">
+                <div style="flex:0 0 80px">
+                  <label style="font-size:11px;color:var(--text2);font-family:var(--mono);display:block;margin-bottom:6px">ICON (emoji)</label>
+                  <input type="text" id="socialCustomIcon" placeholder="😊" maxlength="4" oninput="updateSocialPreview()"
+                    style="width:100%;padding:8px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:18px;text-align:center">
+                </div>
+                <div style="flex:1">
+                  <label style="font-size:11px;color:var(--text2);font-family:var(--mono);display:block;margin-bottom:6px">DISPLAY NAME (optional — overrides persona)</label>
+                  <input type="text" id="socialCustomName" placeholder="Leave blank to use random persona" oninput="updateSocialPreview()"
+                    style="width:100%;padding:8px 10px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:var(--mono);font-size:12px">
+                </div>
+              </div>
+
               <div>
                 <label style="font-size:11px;color:var(--text2);font-family:var(--mono);display:block;margin-bottom:6px">POST TEXT</label>
                 <textarea id="socialPostText" rows="4"
@@ -961,10 +974,26 @@ function refreshTeamUI() {
           <button class="btn small secondary" onclick="window.open('teacherbrand.html?team=${id}','_blank')">📱 Brand Page</button>
           <button class="btn small secondary" onclick="copyBrandLink('${id}', '${team.brandName}')" title="Copy brand page link">🔗 Copy Link</button>
           <button class="btn small secondary" onclick="openCompare('${id}')" title="Head-to-head compare">⚔️ Compare</button>
+          <button class="btn small secondary" onclick="editTeamMembers('${id}', \`${(team.members||'').replace(/`/g,"'")}\`)">✏️ Members</button>
           <button class="btn small danger" onclick="confirmDeleteTeam('${id}', '${team.brandName}')">✕</button>
         </div>
       </div>`;
   }).join('');
+}
+
+function editTeamMembers(teamId, currentMembers) {
+  openModal(
+    'Edit Team Members',
+    `<label style="font-family:var(--mono);font-size:11px;color:var(--muted);display:block;margin-bottom:6px">STUDENT NAMES (comma-separated)</label>
+     <input id="editMembersInput" type="text" value="${currentMembers}"
+       style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none">`,
+    () => {
+      const val = (document.getElementById('editMembersInput')?.value || '').trim();
+      db.ref(`teams/${teamId}/members`).set(val).then(() => showToast('✓ Members updated'));
+    }
+  );
+  // Auto-focus the input after modal opens
+  setTimeout(() => document.getElementById('editMembersInput')?.focus(), 80);
 }
 
 function renderStatBars(stats) {
@@ -2037,6 +2066,14 @@ function publishPost() {
     }
   }
 
+  var customName = (document.getElementById('socialCustomName')?.value || '').trim();
+  var customIcon = (document.getElementById('socialCustomIcon')?.value || '').trim();
+  if (customName) {
+    persona.name   = customName;
+    persona.handle = '@' + customName.replace(/\s+/g, '_').toLowerCase();
+  }
+  if (customIcon) persona.avatar = customIcon;
+
   var likes    = Math.floor(Math.random() * 800) + 50;
   var imageUrl = (document.getElementById('socialImageUrl')?.value || '').trim();
 
@@ -2058,6 +2095,8 @@ function publishPost() {
     showToast('📣 Posted to BuzzNet!');
     document.getElementById('socialPostText').value = '';
     document.getElementById('socialImageUrl').value = '';
+    document.getElementById('socialCustomName').value = '';
+    document.getElementById('socialCustomIcon').value = '';
     document.getElementById('socialPreview').style.display = 'none';
     renderQuotaChecklist();
   }).catch(function(e) {
