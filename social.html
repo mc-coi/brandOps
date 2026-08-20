@@ -151,6 +151,27 @@ header {
   box-shadow: 0 0 20px rgba(245,166,35,0.08);
 }
 
+/* ── Projector Mode ── */
+body.projector .layout { grid-template-columns: 1fr; }
+body.projector .sidebar { display: none; }
+body.projector .feed-col { padding: 28px 6vw 20px; }
+body.projector .posts-inner { gap: 20px; max-width: 900px; margin: 0 auto; width: 100%; }
+body.projector .post-card { padding: 28px 32px; border-radius: 16px; border-width: 2px; }
+body.projector .post-avatar { width: 64px; height: 64px; font-size: 32px; }
+body.projector .post-name { font-size: 22px; }
+body.projector .post-handle { font-size: 15px; }
+body.projector .post-type-badge { font-size: 13px; padding: 4px 12px; }
+body.projector .post-text { font-size: 22px; line-height: 1.6; }
+body.projector .post-action { font-size: 17px; gap: 7px; }
+body.projector .post-time { font-size: 14px; }
+body.projector .post-tag { font-size: 22px; }
+body.projector .post-header { gap: 18px; margin-bottom: 18px; }
+body.projector .post-footer { margin-top: 20px; padding-top: 16px; }
+
+.projector-btn { cursor: pointer; transition: all 0.15s; }
+.projector-btn:hover { border-color: var(--amber) !important; color: var(--amber) !important; }
+.projector-btn.on { background: var(--amber) !important; border-color: var(--amber) !important; color: #000 !important; font-weight: 700; }
+
 /* ── Sidebar ── */
 .sidebar {
   border-left: 1px solid var(--border);
@@ -244,6 +265,7 @@ header {
     <div class="stat-pill">Posts: <span id="postCount">0</span></div>
     <div class="stat-pill">Teams: <span id="teamCount">0</span></div>
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <div id="projectorBtn" class="projector-btn stat-pill" onclick="toggleProjector()" title="Projector Mode">⛶ Projector</div>
   </div>
 </header>
 
@@ -477,6 +499,16 @@ function updateTicker() {
 }
 
 // Auto-cycle removed — feed is now fully scrollable
+
+// ── Projector Mode ─────────────────────────────────────────
+let projectorOn = false;
+function toggleProjector() {
+  projectorOn = !projectorOn;
+  document.body.classList.toggle('projector', projectorOn);
+  const btn = document.getElementById('projectorBtn');
+  btn.classList.toggle('on', projectorOn);
+  btn.textContent = projectorOn ? '✕ Exit Projector' : '⛶ Projector';
+}
 
 // ── Utilities ──────────────────────────────────────────────
 function timeAgo(ts) {
