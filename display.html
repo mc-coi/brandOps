@@ -427,11 +427,11 @@ function rebuildSlides() {
     newSlides.push({ type: 'brandies', week, teams: sorted });
   }
 
-  // Weave social post slides in — one random post after every 3 brand/event slides
-  if (socialPostsData.length) {
-    // Pick up to 6 posts to use (shuffle recent pool)
-    const pool = socialPostsData.slice(0, 12);
-    const shuffled = pool.slice().sort(() => Math.random() - 0.5);
+  // Weave social post slides in — all current-week posts, shuffled, woven through the rotation
+  const weekPosts = socialPostsData.filter(p => p.week === week);
+  const postPool  = weekPosts.length ? weekPosts : socialPostsData.slice(0, 20); // fallback to recent if no week filter
+  if (postPool.length) {
+    const shuffled = postPool.slice().sort(() => Math.random() - 0.5);
     let postIdx = 0;
     const withSocial = [];
     let nonSocialCount = 0;
@@ -439,14 +439,14 @@ function rebuildSlides() {
       withSocial.push(slide);
       if (slide.type === 'brand' || slide.type === 'event') {
         nonSocialCount++;
-        if (nonSocialCount % 3 === 0 && postIdx < shuffled.length) {
+        if (nonSocialCount % 2 === 0 && postIdx < shuffled.length) {
           withSocial.push({ type: 'social', post: shuffled[postIdx++] });
         }
       }
     }
-    // Always end with a social post if we have any left
-    if (postIdx < shuffled.length) {
-      withSocial.push({ type: 'social', post: shuffled[postIdx] });
+    // Drain any remaining posts at the end so all get shown
+    while (postIdx < shuffled.length) {
+      withSocial.push({ type: 'social', post: shuffled[postIdx++] });
     }
     slides = withSocial;
   } else {
@@ -623,11 +623,12 @@ function renderCurrentSlide() {
       </div>
     </div>`;
   } else if (data.type === 'brandies') {
-    const awards = calcBrandiesAwards(data.week, data.teams);
+    const isTeacherAssigned = seasonData.brandies && seasonData.brandies.week === data.week;
+    const awards = getBrandiesAwards(data.week, data.teams);
     el.innerHTML = `<div class="brandies-slide">
       <div class="brandies-eyebrow">🏆 BrandOps Weekly Awards</div>
       <div class="brandies-title">The Brandies</div>
-      <div class="brandies-week">Week ${data.week} · Live Results</div>
+      <div class="brandies-week">Week ${data.week} · ${isTeacherAssigned ? 'Official Results' : 'Auto-calculated — teacher can assign winners'}</div>
       <div class="brandies-grid">
         <div class="award-card" style="--award-color:#f5a623">
           <div class="award-icon">🎙️</div>
@@ -661,43 +662,46 @@ function renderCurrentSlide() {
   updateDots();
 }
 
-// ── Brandies award calculator ─────────────────────────────────
-function calcBrandiesAwards(week, sortedTeams) {
-  const teams = Object.entries(teamsData);
-  const weekPosts = socialPostsData.filter(p => p.week === week && p.accountType === 'brand');
+// ── Brandies award data ───────────────────────────────────────
+// Returns teacher-assigned data if published, otherwise auto-calc fallback
+function getBrandiesAwards(week, sortedTeams) {
+  const assigned = seasonData.brandies;
+  if (assigned && assigned.week === week) {
+    // Teacher has published for this week — use it directly
+    return ['viral','points','visual','leader'].reduce((acc, key) => {
+      const a = assigned[key] || {};
+      acc[key] = { name: a.teamName || '—', detail: a.reason || '' };
+      return acc;
+    }, {});
+  }
 
-  // Most Viral: most posts this week
+  // Auto-calc fallback
+  const teams    = Object.entries(teamsData);
+  const weekBrandPosts = socialPostsData.filter(p => p.week === week && p.accountType === 'brand');
+
   const postCount = {};
-  weekPosts.forEach(p => { postCount[p.teamId] = (postCount[p.teamId] || 0) + 1; });
-  const viralId = Object.keys(postCount).sort((a,b) => postCount[b]-postCount[a])[0];
-  const viralName = viralId ? (teamsData[viralId]?.brandName || '—') : (sortedTeams[0]?.brandName || '—');
-  const viralCount = postCount[viralId] || 0;
+  weekBrandPosts.forEach(p => { postCount[p.teamId] = (postCount[p.teamId]||0)+1; });
+  const viralId   = Object.keys(postCount).sort((a,b) => postCount[b]-postCount[a])[0];
+  const viralName = viralId ? (teamsData[viralId]?.brandName||'—') : (sortedTeams[0]?.brandName||'—');
 
-  // Points Leader: most points this week from scoreLog
   const weekPts = {};
-  teams.forEach(([tid, t]) => {
-    const pts = Object.values(t.scoreLog || {}).filter(e => e.week === week).reduce((s,e) => s+(e.points||0), 0);
-    weekPts[tid] = pts;
+  teams.forEach(([tid,t]) => {
+    weekPts[tid] = Object.values(t.scoreLog||{}).filter(e=>e.week===week).reduce((s,e)=>s+(e.points||0),0);
   });
-  const ptsId   = Object.keys(weekPts).sort((a,b) => weekPts[b]-weekPts[a])[0];
-  const ptsName = ptsId ? (teamsData[ptsId]?.brandName || '—') : '—';
-  const ptsTotal = weekPts[ptsId] || 0;
+  const ptsId   = Object.keys(weekPts).sort((a,b)=>weekPts[b]-weekPts[a])[0];
+  const ptsName = ptsId ? (teamsData[ptsId]?.brandName||'—') : '—';
 
-  // Visual Storyteller: most image posts this week
   const imgCount = {};
-  weekPosts.filter(p => p.imageUrl).forEach(p => { imgCount[p.teamId] = (imgCount[p.teamId] || 0) + 1; });
-  const imgId   = Object.keys(imgCount).sort((a,b) => imgCount[b]-imgCount[a])[0];
-  const imgName = imgId ? (teamsData[imgId]?.brandName || '—') : (sortedTeams[0]?.brandName || '—');
-  const imgCount2 = imgCount[imgId] || 0;
+  weekBrandPosts.filter(p=>p.imageUrl).forEach(p=>{ imgCount[p.teamId]=(imgCount[p.teamId]||0)+1; });
+  const imgId   = Object.keys(imgCount).sort((a,b)=>imgCount[b]-imgCount[a])[0];
+  const imgName = imgId ? (teamsData[imgId]?.brandName||'—') : (sortedTeams[0]?.brandName||'—');
 
-  // Market Leader: highest market score (first in sorted list)
-  const leader = sortedTeams[0] || {};
-
+  const leader  = sortedTeams[0] || {};
   return {
-    viral:  { name: viralName,  detail: viralCount ? `${viralCount} post${viralCount!==1?'s':''} this week` : 'Week just started' },
-    points: { name: ptsName,    detail: ptsTotal   ? `+${ptsTotal} pts this week` : 'No scores yet this week' },
-    visual: { name: imgName,    detail: imgCount2  ? `${imgCount2} visual post${imgCount2!==1?'s':''} this week` : 'No image posts yet' },
-    leader: { name: leader.brandName || '—', detail: `Market Score: ${leader.score ?? '—'}` },
+    viral:  { name: viralName,            detail: postCount[viralId] ? `${postCount[viralId]} post${postCount[viralId]!==1?'s':''} this week` : 'Auto-calculated' },
+    points: { name: ptsName,              detail: weekPts[ptsId]     ? `+${weekPts[ptsId]} pts this week` : 'Auto-calculated' },
+    visual: { name: imgName,              detail: imgCount[imgId]    ? `${imgCount[imgId]} visual post${imgCount[imgId]!==1?'s':''}` : 'Auto-calculated' },
+    leader: { name: leader.brandName||'—',detail: `Market Score: ${leader.score??'—'}` },
   };
 }
 

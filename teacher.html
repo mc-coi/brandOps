@@ -498,6 +498,20 @@ textarea { resize: vertical; min-height: 60px; }
         </div>
         <!-- ── / Weekly Journal Grading ──────────────────────── -->
 
+        <!-- ── The Brandies ──────────────────────────────────── -->
+        <div class="card" id="brandiesCard">
+          <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>🏆 The Brandies</span>
+            <span id="brandiesWeekLabel" style="font-family:var(--mono);font-size:11px;color:var(--muted)"></span>
+          </div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+            Pick the weekly award winners. When you publish, the results appear live on the projector.
+          </p>
+          <div id="brandiesRows" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+          <button class="btn success" style="width:auto" onclick="publishBrandies()">📺 Publish to Display</button>
+        </div>
+        <!-- ── / The Brandies ─────────────────────────────────── -->
+
         <div class="card">
           <div class="grid-2">
             <div>
@@ -896,6 +910,7 @@ function initApp(passedDb) {
     refreshSeasonUI();
     renderBuzznetGradingCard();
     renderJournalGradingCard();
+    renderBrandiesCard();
   });
 
   db.ref('teams').on('value', snap => {
@@ -904,6 +919,7 @@ function initApp(passedDb) {
     refreshTeamSelects();
     renderBuzznetGradingCard();
     renderJournalGradingCard();
+    renderBrandiesCard();
   });
 
   db.ref('social/posts').on('value', snap => {
@@ -1247,13 +1263,15 @@ function renderBuzznetGradingCard() {
     const log = Object.values(team.scoreLog || {});
     const alreadyGraded = log.find(e => e.deliverable === 'buzznet_posts' && e.week === week);
 
+    // Cache post text by key so onclick only needs the key (avoids HTML-escaping bugs)
+    weekPosts.forEach(p => { window._npcPostCache = window._npcPostCache || {}; window._npcPostCache[p._key] = p.text || ''; });
+
     const postPreview = weekPosts.length
       ? weekPosts.map(p => {
           const cmtCount = Object.keys(p.comments || {}).length;
-          const safe = (p.text||'').replace(/'/g,"&#39;").replace(/"/g,"&quot;");
           return `<div style="padding:5px 8px;background:var(--bg3);border-radius:4px;font-size:11px;color:var(--text2);line-height:1.4;font-family:var(--mono);display:flex;align-items:flex-start;gap:6px">
             <span style="flex:1">${(p.text||'').slice(0,120)}${p.text&&p.text.length>120?'…':''}</span>
-            <button onclick="addNpcComment('${p._key}','${safe.slice(0,200)}')" style="flex-shrink:0;font-size:10px;padding:2px 7px;border-radius:4px;background:var(--bg);border:1px solid var(--border);color:var(--text2);cursor:pointer;white-space:nowrap">💬${cmtCount?' '+cmtCount:''}</button>
+            <button onclick="addNpcComment('${p._key}')" style="flex-shrink:0;font-size:10px;padding:2px 7px;border-radius:4px;background:var(--bg);border:1px solid var(--border);color:var(--text2);cursor:pointer;white-space:nowrap">💬${cmtCount?' '+cmtCount:''}</button>
           </div>`;
         }).join('')
       : '<div style="font-size:11px;color:var(--muted);font-family:var(--mono);font-style:italic">No posts yet this week</div>';
@@ -1394,6 +1412,58 @@ function applyJournalGrade(teamId, score) {
   });
 }
 
+// ── The Brandies ──────────────────────────────────────────
+const BRANDIES_AWARDS = [
+  { key: 'viral',   icon: '🎙️', label: 'Most Viral' },
+  { key: 'points',  icon: '📈', label: 'Points Leader' },
+  { key: 'visual',  icon: '🖼️', label: 'Visual Storyteller' },
+  { key: 'leader',  icon: '📊', label: 'Market Leader' },
+];
+
+function renderBrandiesCard() {
+  const week = seasonData.currentWeek || 1;
+  document.getElementById('brandiesWeekLabel').textContent = 'Week ' + week;
+
+  const teams = Object.entries(teamsData);
+  const existing = seasonData.brandies || {};
+  const teamOpts = '<option value="">— Pick a team —</option>' +
+    teams.map(([tid, t]) => `<option value="${tid}">${t.brandName || 'Unnamed'}</option>`).join('');
+
+  document.getElementById('brandiesRows').innerHTML = BRANDIES_AWARDS.map(a => {
+    const saved = existing[a.key] || {};
+    const selectedTeam = saved.teamId || '';
+    const savedReason  = (saved.reason || '').replace(/"/g, '&quot;');
+    const opts = teamOpts.replace(`value="${selectedTeam}"`, `value="${selectedTeam}" selected`);
+    return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">${a.icon} ${a.label}</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="brandies_${a.key}" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-family:var(--mono);font-size:11px;color:var(--text)">${opts}</select>
+        <input id="brandies_reason_${a.key}" type="text" value="${savedReason}" placeholder="Short reason (optional)" style="flex:2;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-family:var(--mono);font-size:11px;color:var(--text)">
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function publishBrandies() {
+  const week = seasonData.currentWeek || 1;
+  const brandies = { week };
+  BRANDIES_AWARDS.forEach(a => {
+    const teamId = document.getElementById(`brandies_${a.key}`)?.value || '';
+    const reason = (document.getElementById(`brandies_reason_${a.key}`)?.value || '').trim();
+    const team   = teamsData[teamId];
+    brandies[a.key] = {
+      teamId,
+      teamName: team?.brandName || '',
+      reason,
+      icon: a.icon,
+      label: a.label,
+    };
+  });
+  db.ref('season/brandies').set(brandies).then(() => {
+    showToast('🏆 Brandies published to display!');
+  });
+}
+
 // ── NPC Comment System ────────────────────────────────────
 function setAiApiKey() {
   const current = localStorage.getItem('brandops_ai_key') || '';
@@ -1412,54 +1482,95 @@ function setAiApiKey() {
   setTimeout(() => document.getElementById('apiKeyInput')?.focus(), 80);
 }
 
-function addNpcComment(postKey, postText) {
-  const NPC_TYPES = [
-    { type: 'public',     label: '🧑 Public',     personas: getSocialPersona.bind(null, 'public') },
-    { type: 'influencer', label: '✨ Influencer',  personas: getSocialPersona.bind(null, 'influencer') },
-    { type: 'media',      label: '📰 Media',       personas: getSocialPersona.bind(null, 'media') },
-    { type: 'rival',      label: '😤 Rival',       personas: getSocialPersona.bind(null, 'rival') },
-  ];
-  let _selectedType = 'public';
+function addNpcComment(postKey) {
+  // Look up post text from cache (avoids any onclick escaping issues)
+  const postText = (window._npcPostCache || {})[postKey] || '';
+  // Store current postKey so the Generate button and confirm can both access it
+  window._npcActivePostKey = postKey;
+  window._npcCommentType = 'public';
 
-  const buildTypeButtons = () => NPC_TYPES.map(t =>
-    `<button onclick="document.querySelectorAll('.npc-type-btn').forEach(b=>b.style.opacity='0.4');this.style.opacity='1';window._npcCommentType='${t.type}'" class="npc-type-btn" style="padding:5px 10px;border-radius:6px;font-family:var(--mono);font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text);cursor:pointer;opacity:${t.type==='public'?'1':'0.4'}">${t.label}</button>`
+  const NPC_TYPES = [
+    { type: 'public',     label: '🧑 Public' },
+    { type: 'influencer', label: '✨ Influencer' },
+    { type: 'media',      label: '📰 Media' },
+    { type: 'rival',      label: '😤 Rival' },
+  ];
+
+  const typeButtons = NPC_TYPES.map(t =>
+    `<button onclick="document.querySelectorAll('.npc-type-btn').forEach(b=>b.style.opacity='0.4');this.style.opacity='1';window._npcCommentType='${t.type}';" class="npc-type-btn" style="padding:5px 10px;border-radius:6px;font-family:var(--mono);font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text);cursor:pointer;opacity:${t.type==='public'?'1':'0.4'}">${t.label}</button>`
   ).join('');
 
-  window._npcCommentType = 'public';
+  const preview = postText ? postText.slice(0, 100) + (postText.length > 100 ? '…' : '') : '(no text)';
 
   openModal(
     '💬 Add NPC Comment',
     `<div style="margin-bottom:10px">
        <label style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px">PERSONA TYPE</label>
-       <div style="display:flex;gap:6px;flex-wrap:wrap">${buildTypeButtons()}</div>
+       <div style="display:flex;gap:6px;flex-wrap:wrap">${typeButtons}</div>
      </div>
-     <div style="padding:8px;background:var(--bg3);border-radius:4px;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:10px;line-height:1.5">Post: "${postText.slice(0,100)}${postText.length>100?'…':''}"</div>
+     <div style="padding:8px;background:var(--bg3);border-radius:4px;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:10px;line-height:1.5;word-break:break-word">Post: ${preview}</div>
      <label style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px">COMMENT TEXT</label>
      <textarea id="npcCommentText" rows="3" placeholder="Write a comment or click Generate AI…" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;resize:vertical"></textarea>
      <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
-       <button onclick="doGenerateAiComment('${postKey}','${postText.replace(/'/g,"&#39;").slice(0,200)}')" style="padding:6px 12px;border-radius:6px;font-family:var(--mono);font-size:11px;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.4);color:#c084fc;cursor:pointer;font-weight:600">✨ Generate AI Comment</button>
+       <button onclick="doGenerateAiComment()" style="padding:6px 12px;border-radius:6px;font-family:var(--mono);font-size:11px;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.4);color:#c084fc;cursor:pointer;font-weight:600">✨ Generate AI Comment</button>
        <span id="aiCommentStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted)"></span>
      </div>`,
     () => {
       const text = (document.getElementById('npcCommentText')?.value || '').trim();
       if (!text) { showToast('Enter a comment first.', true); return; }
-      const type = window._npcCommentType || 'public';
-      const persona = getSocialPersona(type);
-      publishNpcComment(postKey, persona, type, text);
+      const type    = window._npcCommentType || 'public';
+      const persona = getNpcCommentPersona(type);
+      publishNpcComment(window._npcActivePostKey, persona, type, text);
     }
   );
   setTimeout(() => document.getElementById('npcCommentText')?.focus(), 80);
 }
 
-async function doGenerateAiComment(postKey, postText) {
-  const apiKey = localStorage.getItem('brandops_ai_key');
-  const status = document.getElementById('aiCommentStatus');
+// Persona picker safe for the comment context (no DOM dependency for rival)
+function getNpcCommentPersona(type) {
+  const PUBLIC_PERSONAS = [
+    { name: 'Sarah K.',         handle: '@sarahk_shopper',   avatar: '🛍️' },
+    { name: 'Marcus D.',        handle: '@marcusd92',         avatar: '👨' },
+    { name: 'Priya L.',         handle: '@priya.lives',       avatar: '🧕' },
+    { name: 'Jordan T.',        handle: '@jordanT_real',      avatar: '🧢' },
+    { name: 'frustrated_buyer', handle: '@anon_consumer88',   avatar: '😤' },
+    { name: 'TrustPilot User',  handle: '@tpuser4821',        avatar: '⭐' },
+  ];
+  const MEDIA_PERSONAS = [
+    { name: 'BrandBeat Weekly', handle: '@BrandBeatWeekly',  avatar: '📰' },
+    { name: 'Market Insider',   handle: '@MktInsiderNews',   avatar: '📊' },
+    { name: 'AdWeek Report',    handle: '@AdWeekReport',     avatar: '📣' },
+    { name: 'Consumer Watch',   handle: '@ConsumerWatchHQ',  avatar: '🔍' },
+  ];
+  const INFLUENCER_PERSONAS = [
+    { name: 'Mia Glows Up',     handle: '@mia.glowsup',      avatar: '💅' },
+    { name: 'TechDropKing',     handle: '@techdropking',      avatar: '👑' },
+    { name: 'Everyday Alexis',  handle: '@everydayalexis',   avatar: '✨' },
+    { name: 'Jake Unfiltered',  handle: '@jake_unfiltered',  avatar: '🎥' },
+  ];
+  const RIVAL_PERSONAS = [
+    { name: 'Rival Brand',      handle: '@rivalofficial',    avatar: '🏢' },
+    { name: 'Competitor HQ',    handle: '@CompetitorHQ',     avatar: '⚔️' },
+    { name: 'The Other Brand',  handle: '@theotherbrand',    avatar: '😏' },
+  ];
+  const arr = type === 'media'      ? MEDIA_PERSONAS      :
+              type === 'influencer' ? INFLUENCER_PERSONAS  :
+              type === 'rival'      ? RIVAL_PERSONAS        : PUBLIC_PERSONAS;
+  return arr[Math.floor(Date.now() / 5000) % arr.length];
+}
+
+async function doGenerateAiComment() {
+  // Read postKey and postText from globals set when modal was opened
+  const postKey  = window._npcActivePostKey || '';
+  const postText = (window._npcPostCache || {})[postKey] || '';
+  const apiKey   = localStorage.getItem('brandops_ai_key');
+  const status   = document.getElementById('aiCommentStatus');
   if (!apiKey) {
-    if (status) status.textContent = 'No API key set — click ⚙️ AI Key first';
+    if (status) status.textContent = 'No API key — click ⚙️ AI Key first';
     return;
   }
   if (status) status.textContent = '⏳ Generating…';
-  const type = window._npcCommentType || 'public';
+  const type    = window._npcCommentType || 'public';
   const toneMap = { public:'a regular consumer', influencer:'a social media influencer', media:'a brand journalist', rival:'a skeptical rival brand observer' };
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1473,7 +1584,7 @@ async function doGenerateAiComment(postKey, postText) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 80,
-        messages: [{ role: 'user', content: `Write a short social media comment (1-2 sentences, under 120 characters) from the perspective of ${toneMap[type]||'a consumer'} reacting to this brand post: "${postText}". Make it feel authentic and natural. Reply with only the comment text, no quotes.` }],
+        messages: [{ role: 'user', content: `Write a short social media comment (1-2 sentences, under 120 characters) from the perspective of ${toneMap[type]||'a consumer'} reacting to this brand post: "${postText.slice(0,300)}". Make it feel authentic and natural. Reply with only the comment text, no quotes.` }],
       }),
     });
     if (!res.ok) throw new Error(`API error ${res.status}`);
