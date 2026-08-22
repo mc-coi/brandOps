@@ -472,7 +472,10 @@ textarea { resize: vertical; min-height: 60px; }
         <div class="card" id="buzznetGradingCard">
           <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
             <span>📣 Weekly BuzzNet Grades</span>
-            <span id="buzznetWeekLabel" style="font-family:var(--mono);font-size:11px;color:var(--muted)"></span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span id="buzznetWeekLabel" style="font-family:var(--mono);font-size:11px;color:var(--muted)"></span>
+              <button onclick="setAiApiKey()" style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--bg3);border:1px solid var(--border);color:var(--muted);cursor:pointer" title="Set Anthropic API key for AI-generated NPC comments">⚙️ AI Key</button>
+            </div>
           </div>
           <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">
             One grade per team covers both posts for the week. Affects Reputation &amp; Sentiment.
@@ -1234,9 +1237,10 @@ function renderBuzznetGradingCard() {
   if (!teams.length) { rows.innerHTML = '<div style="font-family:var(--mono);font-size:12px;color:var(--muted)">No teams yet.</div>'; return; }
 
   rows.innerHTML = teams.map(([tid, team]) => {
-    // Posts this team made this week
-    const weekPosts = Object.values(allPosts)
-      .filter(p => p.teamId === tid && p.accountType === 'brand' && p.week === week)
+    // Posts this team made this week (with Firebase key)
+    const weekPosts = Object.entries(allPosts)
+      .filter(([k, p]) => p.teamId === tid && p.accountType === 'brand' && p.week === week)
+      .map(([k, p]) => ({ ...p, _key: k }))
       .sort((a,b) => a.timestamp - b.timestamp);
 
     // Check if already graded this week
@@ -1244,7 +1248,14 @@ function renderBuzznetGradingCard() {
     const alreadyGraded = log.find(e => e.deliverable === 'buzznet_posts' && e.week === week);
 
     const postPreview = weekPosts.length
-      ? weekPosts.map(p => `<div style="padding:5px 8px;background:var(--bg3);border-radius:4px;font-size:11px;color:var(--text2);line-height:1.4;font-family:var(--mono)">${(p.text||'').slice(0,120)}${p.text&&p.text.length>120?'…':''}</div>`).join('')
+      ? weekPosts.map(p => {
+          const cmtCount = Object.keys(p.comments || {}).length;
+          const safe = (p.text||'').replace(/'/g,"&#39;").replace(/"/g,"&quot;");
+          return `<div style="padding:5px 8px;background:var(--bg3);border-radius:4px;font-size:11px;color:var(--text2);line-height:1.4;font-family:var(--mono);display:flex;align-items:flex-start;gap:6px">
+            <span style="flex:1">${(p.text||'').slice(0,120)}${p.text&&p.text.length>120?'…':''}</span>
+            <button onclick="addNpcComment('${p._key}','${safe.slice(0,200)}')" style="flex-shrink:0;font-size:10px;padding:2px 7px;border-radius:4px;background:var(--bg);border:1px solid var(--border);color:var(--text2);cursor:pointer;white-space:nowrap">💬${cmtCount?' '+cmtCount:''}</button>
+          </div>`;
+        }).join('')
       : '<div style="font-size:11px;color:var(--muted);font-family:var(--mono);font-style:italic">No posts yet this week</div>';
 
     const gradedBadge = alreadyGraded
@@ -1293,6 +1304,15 @@ function applyBuzznetGrade(teamId, score) {
   updates[`teams/${teamId}/stats`] = newStats;
   updates[`teams/${teamId}/totalPoints`] = (team.totalPoints || 0) + effect.points;
   updates[`teams/${teamId}/scoreLog/${Date.now()}`] = logEntry;
+
+  // If score 5 (Advanced), mark all this team's posts this week as boosted
+  if (score === 5) {
+    Object.entries(postsData).forEach(([k, p]) => {
+      if (p.teamId === teamId && p.accountType === 'brand' && p.week === week) {
+        updates[`social/posts/${k}/boosted`] = true;
+      }
+    });
+  }
 
   db.ref().update(updates).then(() => {
     showToast(`✓ BuzzNet grade applied to ${team.brandName}: ${effect.label}`);
@@ -1371,6 +1391,113 @@ function applyJournalGrade(teamId, score) {
 
   db.ref().update(updates).then(() => {
     showToast(`✓ Journal grade applied to ${team.brandName}: ${effect.label}`);
+  });
+}
+
+// ── NPC Comment System ────────────────────────────────────
+function setAiApiKey() {
+  const current = localStorage.getItem('brandops_ai_key') || '';
+  openModal(
+    '⚙️ Anthropic API Key',
+    `<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Enter your Anthropic API key to enable AI-generated NPC comments. Stored locally on this device only.</p>
+     <label style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">API KEY</label>
+     <input id="apiKeyInput" type="password" value="${current}" placeholder="sk-ant-..." style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;margin-top:4px">
+     <p style="font-size:11px;color:var(--muted);margin-top:8px">Used only for NPC comment generation via Claude Haiku.</p>`,
+    () => {
+      const key = (document.getElementById('apiKeyInput')?.value || '').trim();
+      if (key) { localStorage.setItem('brandops_ai_key', key); showToast('✓ API key saved'); }
+      else { localStorage.removeItem('brandops_ai_key'); showToast('API key cleared'); }
+    }
+  );
+  setTimeout(() => document.getElementById('apiKeyInput')?.focus(), 80);
+}
+
+function addNpcComment(postKey, postText) {
+  const NPC_TYPES = [
+    { type: 'public',     label: '🧑 Public',     personas: getSocialPersona.bind(null, 'public') },
+    { type: 'influencer', label: '✨ Influencer',  personas: getSocialPersona.bind(null, 'influencer') },
+    { type: 'media',      label: '📰 Media',       personas: getSocialPersona.bind(null, 'media') },
+    { type: 'rival',      label: '😤 Rival',       personas: getSocialPersona.bind(null, 'rival') },
+  ];
+  let _selectedType = 'public';
+
+  const buildTypeButtons = () => NPC_TYPES.map(t =>
+    `<button onclick="document.querySelectorAll('.npc-type-btn').forEach(b=>b.style.opacity='0.4');this.style.opacity='1';window._npcCommentType='${t.type}'" class="npc-type-btn" style="padding:5px 10px;border-radius:6px;font-family:var(--mono);font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text);cursor:pointer;opacity:${t.type==='public'?'1':'0.4'}">${t.label}</button>`
+  ).join('');
+
+  window._npcCommentType = 'public';
+
+  openModal(
+    '💬 Add NPC Comment',
+    `<div style="margin-bottom:10px">
+       <label style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px">PERSONA TYPE</label>
+       <div style="display:flex;gap:6px;flex-wrap:wrap">${buildTypeButtons()}</div>
+     </div>
+     <div style="padding:8px;background:var(--bg3);border-radius:4px;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:10px;line-height:1.5">Post: "${postText.slice(0,100)}${postText.length>100?'…':''}"</div>
+     <label style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px">COMMENT TEXT</label>
+     <textarea id="npcCommentText" rows="3" placeholder="Write a comment or click Generate AI…" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;resize:vertical"></textarea>
+     <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+       <button onclick="doGenerateAiComment('${postKey}','${postText.replace(/'/g,"&#39;").slice(0,200)}')" style="padding:6px 12px;border-radius:6px;font-family:var(--mono);font-size:11px;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.4);color:#c084fc;cursor:pointer;font-weight:600">✨ Generate AI Comment</button>
+       <span id="aiCommentStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted)"></span>
+     </div>`,
+    () => {
+      const text = (document.getElementById('npcCommentText')?.value || '').trim();
+      if (!text) { showToast('Enter a comment first.', true); return; }
+      const type = window._npcCommentType || 'public';
+      const persona = getSocialPersona(type);
+      publishNpcComment(postKey, persona, type, text);
+    }
+  );
+  setTimeout(() => document.getElementById('npcCommentText')?.focus(), 80);
+}
+
+async function doGenerateAiComment(postKey, postText) {
+  const apiKey = localStorage.getItem('brandops_ai_key');
+  const status = document.getElementById('aiCommentStatus');
+  if (!apiKey) {
+    if (status) status.textContent = 'No API key set — click ⚙️ AI Key first';
+    return;
+  }
+  if (status) status.textContent = '⏳ Generating…';
+  const type = window._npcCommentType || 'public';
+  const toneMap = { public:'a regular consumer', influencer:'a social media influencer', media:'a brand journalist', rival:'a skeptical rival brand observer' };
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-allow-browser': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 80,
+        messages: [{ role: 'user', content: `Write a short social media comment (1-2 sentences, under 120 characters) from the perspective of ${toneMap[type]||'a consumer'} reacting to this brand post: "${postText}". Make it feel authentic and natural. Reply with only the comment text, no quotes.` }],
+      }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const json = await res.json();
+    const generated = json.content?.[0]?.text?.trim() || '';
+    const ta = document.getElementById('npcCommentText');
+    if (ta) ta.value = generated;
+    if (status) status.textContent = '✓ Generated';
+  } catch (e) {
+    if (status) status.textContent = 'Error: ' + e.message;
+  }
+}
+
+function publishNpcComment(postKey, persona, accountType, text) {
+  const comment = {
+    displayName: persona.name,
+    handle:      persona.handle,
+    avatar:      persona.avatar,
+    accountType,
+    text,
+    timestamp:   Date.now(),
+  };
+  db.ref(`social/posts/${postKey}/comments/${Date.now()}`).set(comment).then(() => {
+    showToast(`✓ Comment posted as ${persona.name}`);
   });
 }
 
