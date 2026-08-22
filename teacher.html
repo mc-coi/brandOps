@@ -1829,7 +1829,7 @@ function showToast(msg, isError = false) {
 // ── Modal ─────────────────────────────────────────────────
 function openModal(title, body, onConfirm) {
   document.getElementById('modalTitle').textContent = title;
-  document.getElementById('modalBody').textContent  = body;
+  document.getElementById('modalBody').innerHTML  = body;
   document.getElementById('modalConfirmBtn').onclick = () => { onConfirm(); closeModal(); };
   document.getElementById('confirmModal').classList.add('open');
 }
