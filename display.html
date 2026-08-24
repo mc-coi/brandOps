@@ -622,8 +622,11 @@ function renderCurrentSlide() {
     };
     const badgeStyle = BADGE_STYLES[p.accountType] || BADGE_STYLES.public;
     const badgeLabel = (p.accountType || 'public').charAt(0).toUpperCase() + (p.accountType||'public').slice(1);
-    const rts   = Math.floor((p.likes||0) * 0.3);
-    const rplys = Math.floor((p.likes||0) * 0.12);
+    // Fake-but-consistent big numbers seeded from post timestamp
+    const seed  = (p.timestamp || 1) % 99991;
+    const likes = 2400  + (seed % 44000);
+    const rts   = Math.floor(likes * (0.28 + (seed % 7) * 0.01));
+    const rplys = Math.floor(likes * (0.09 + (seed % 5) * 0.01));
     const imgHtml = p.imageUrl
       ? `<img src="${p.imageUrl}" class="ss-image" onerror="this.style.display='none'">`
       : '';
@@ -639,7 +642,6 @@ function renderCurrentSlide() {
           <div class="ss-cmt-text">${c.text||''}</div>
         </div>
       </div>`).join('') + `</div>` : '';
-    const realCmtCount = cmts.length || rplys;
     el.innerHTML = `<div class="social-slide-inner">
       <div class="ss-platform">📣 BuzzNet · Live Feed</div>
       <div class="ss-header">
@@ -657,7 +659,7 @@ function renderCurrentSlide() {
         <div class="ss-actions">
           <span>❤️ ${(p.likes||0).toLocaleString()}</span>
           <span>🔁 ${rts.toLocaleString()}</span>
-          <span>💬 ${realCmtCount.toLocaleString()}</span>
+          <span>💬 ${rplys.toLocaleString()}</span>
         </div>
         <span style="font-size:11px;color:var(--muted)">${p.handle||''}</span>
       </div>
