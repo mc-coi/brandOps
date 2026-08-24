@@ -140,6 +140,22 @@ body{display:flex;flex-direction:column;font-family:var(--sans);color:var(--text
   font-family:var(--mono);font-size:16px;color:var(--text2);
 }
 .ss-actions { display:flex;gap:28px; }
+/* ── Social slide comments ── */
+.ss-comments { margin-bottom:20px;display:flex;flex-direction:column;gap:10px; }
+.ss-cmt { display:flex;gap:12px;align-items:flex-start;background:#0e0e17;border-radius:10px;padding:10px 14px; }
+.ss-cmt-av { width:34px;height:34px;border-radius:50%;background:#1e1e2a;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0; }
+.ss-cmt-body { flex:1; }
+.ss-cmt-name { font-size:14px;font-weight:700;margin-bottom:2px; }
+.ss-cmt-handle { font-family:var(--mono);font-size:11px;color:var(--text2);margin-bottom:4px; }
+.ss-cmt-text { font-size:16px;line-height:1.4;color:var(--text2); }
+
+/* ── Sidebar event card ── */
+.side-event { padding:0; }
+.se-deck { font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:6px; }
+.se-title { font-family:var(--serif);font-size:16px;font-weight:900;line-height:1.2;margin-bottom:6px;color:var(--text); }
+.se-team { font-family:var(--mono);font-size:10px;color:var(--amber);margin-bottom:6px; }
+.se-effects { display:flex;gap:4px;flex-wrap:wrap; }
+.se-pill { font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:2px; }
 
 /* ── Market Dispatch slide ── */
 .md-slide{width:100%;max-width:760px;background:var(--bg3);border:1px solid var(--border);padding:0;overflow:hidden;}
@@ -218,23 +234,32 @@ body{display:flex;flex-direction:column;font-family:var(--sans);color:var(--text
       <div class="sidebar-title">Live Standings</div>
       <div id="sideLeaderboard"></div>
     </div>
-    <div class="sidebar-section">
-      <div class="sidebar-title">Market</div>
-      <div class="market-stat">
-        <span class="ms-label">Week</span>
-        <span class="ms-val" id="mktWeek" style="color:var(--amber)">—</span>
+    <!-- Rotating bottom panel: Market ↔ Event Cards -->
+    <div class="sidebar-section" id="sideBottomPanel">
+      <!-- Market view (default) -->
+      <div id="sideMarketView">
+        <div class="sidebar-title">Market</div>
+        <div class="market-stat">
+          <span class="ms-label">Week</span>
+          <span class="ms-val" id="mktWeek" style="color:var(--amber)">—</span>
+        </div>
+        <div class="market-stat">
+          <span class="ms-label">Phase</span>
+          <span class="ms-val" id="mktPhase" style="font-size:11px">—</span>
+        </div>
+        <div class="market-stat">
+          <span class="ms-label">Volatility</span>
+          <span class="ms-val" id="mktVol">—</span>
+        </div>
+        <div class="market-stat">
+          <span class="ms-label">Teams</span>
+          <span class="ms-val" id="mktTeams">—</span>
+        </div>
       </div>
-      <div class="market-stat">
-        <span class="ms-label">Phase</span>
-        <span class="ms-val" id="mktPhase" style="font-size:11px">—</span>
-      </div>
-      <div class="market-stat">
-        <span class="ms-label">Volatility</span>
-        <span class="ms-val" id="mktVol">—</span>
-      </div>
-      <div class="market-stat">
-        <span class="ms-label">Teams</span>
-        <span class="ms-val" id="mktTeams">—</span>
+      <!-- Event card view (hidden when no events) -->
+      <div id="sideEventView" style="display:none">
+        <div class="sidebar-title" id="sideEventLabel">⚡ Active Event</div>
+        <div id="sideEventContent" class="side-event"></div>
       </div>
     </div>
     <div class="sidebar-section" style="display:flex;align-items:center;justify-content:space-between">
@@ -340,6 +365,7 @@ db.ref('season').on('value', s => {
   checkPhaseTransition();
   rebuildSlides();
   updateSidebar();
+  startSidebarEventRotation();
 });
 db.ref('teams').on('value', s => {
   teamsData = s.val() || {};
@@ -601,6 +627,19 @@ function renderCurrentSlide() {
     const imgHtml = p.imageUrl
       ? `<img src="${p.imageUrl}" class="ss-image" onerror="this.style.display='none'">`
       : '';
+    const cmts = Object.values(p.comments || {}).sort((a,b) => a.timestamp - b.timestamp).slice(0, 3);
+    const cmtHtml = cmts.length ? `<div class="ss-comments">` + cmts.map(c =>
+      `<div class="ss-cmt">
+        <div class="ss-cmt-av">${c.avatar||'👤'}</div>
+        <div class="ss-cmt-body">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span class="ss-cmt-name">${c.displayName||'Anonymous'}</span>
+            <span class="ss-cmt-handle">${c.handle||''}</span>
+          </div>
+          <div class="ss-cmt-text">${c.text||''}</div>
+        </div>
+      </div>`).join('') + `</div>` : '';
+    const realCmtCount = cmts.length || rplys;
     el.innerHTML = `<div class="social-slide-inner">
       <div class="ss-platform">📣 BuzzNet · Live Feed</div>
       <div class="ss-header">
@@ -613,11 +652,12 @@ function renderCurrentSlide() {
       </div>
       <div class="ss-text">${p.text||''}</div>
       ${imgHtml}
+      ${cmtHtml}
       <div class="ss-footer">
         <div class="ss-actions">
           <span>❤️ ${(p.likes||0).toLocaleString()}</span>
           <span>🔁 ${rts.toLocaleString()}</span>
-          <span>💬 ${rplys.toLocaleString()}</span>
+          <span>💬 ${realCmtCount.toLocaleString()}</span>
         </div>
         <span style="font-size:11px;color:var(--muted)">${p.handle||''}</span>
       </div>
@@ -759,10 +799,59 @@ function updateSidebar() {
   }).join('');
 }
 
+// ── Sidebar event card rotation ───────────────────────────────
+let _sideEventTimer = null;
+let _sideEventIdx   = -1;  // -1 = showing Market, 0+ = event index
+
+function startSidebarEventRotation() {
+  clearInterval(_sideEventTimer);
+  _sideEventIdx = -1;
+  showSidebarMarket();
+
+  const events = Object.entries(seasonData.activeCards || {});
+  if (!events.length) return;  // No events — stay on Market
+
+  // Cycle: Market (6s) → event 0 (6s) → event 1 (6s) → … → back to Market
+  _sideEventTimer = setInterval(() => {
+    const evts = Object.entries(seasonData.activeCards || {});
+    if (!evts.length) { showSidebarMarket(); return; }
+    _sideEventIdx = (_sideEventIdx + 1) % (evts.length + 1);
+    if (_sideEventIdx === evts.length) {
+      showSidebarMarket();
+    } else {
+      const [tid, cd] = evts[_sideEventIdx];
+      const card = CardLibrary.getById(cd.cardId);
+      const team = teamsData[tid];
+      if (card && team) showSidebarEvent(card, team, _sideEventIdx + 1, evts.length);
+      else showSidebarMarket();
+    }
+  }, 6000);
+}
+
+function showSidebarMarket() {
+  document.getElementById('sideMarketView').style.display = '';
+  document.getElementById('sideEventView').style.display  = 'none';
+}
+
+function showSidebarEvent(card, team, idx, total) {
+  document.getElementById('sideMarketView').style.display = 'none';
+  document.getElementById('sideEventView').style.display  = '';
+  document.getElementById('sideEventLabel').textContent   = `⚡ Event ${idx} of ${total}`;
+  const fx = Object.entries(card.effects || {});
+  const pills = fx.map(([s, v]) =>
+    `<span class="se-pill ${v > 0 ? 'ec-pos' : 'ec-neg'}">${s} ${v > 0 ? '+' : ''}${v}</span>`
+  ).join('');
+  document.getElementById('sideEventContent').innerHTML = `
+    <div class="se-deck">${card.deck || ''} event</div>
+    <div class="se-title">${card.title || ''}</div>
+    <div class="se-team">↳ ${team.brandName || ''}</div>
+    <div class="se-effects">${pills}</div>`;
+}
+
 // ── Rotation ──────────────────────────────────────────────────
 function resetTimer() {
   clearInterval(rotateTimer);
-  rotateTimer = setInterval(nextSlide, 9000);
+  rotateTimer = setInterval(nextSlide, 12000);
 }
 function nextSlide() {
   if (!slides.length) return;
