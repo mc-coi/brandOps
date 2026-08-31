@@ -24,7 +24,7 @@ const GAME_CONFIG = {
   statMin: 0,
   baseStockPrice: 10.00,
   scoreEffects: {
-    1: { label: "Below Basic", points: 1, multiplier: 0.5 },
+    1: { label: "Below Basic", points: 1, multiplier: 0.25 },
     3: { label: "Proficient",  points: 3, multiplier: 1.0 },
     5: { label: "Advanced",    points: 5, multiplier: 1.5 },
   }
