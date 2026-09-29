@@ -866,7 +866,9 @@ function doLogin() {
     const stored = snap.val();
 
     function launchConsole(db) {
-      firebase.auth().signInAnonymously().catch(() => {}).finally(() => {
+      firebase.auth().signInAnonymously().then(function(result) {
+        db.ref('config/teacherUids/' + result.user.uid).set(true);
+      }).catch(() => {}).finally(() => {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appShell').style.display = 'block';
         initApp(db);

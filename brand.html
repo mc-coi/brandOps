@@ -645,14 +645,13 @@ if (!TEAM_ID) {
   function verifyPin() {
     var entered = (document.getElementById('buzzPinInput').value || '').trim();
     var stored  = teamData.pin;
-    if (!stored) {
-      // No PIN set yet — let them through (teacher hasn't set one)
+    if (!stored || entered === String(stored)) {
       try { sessionStorage.setItem(SESSION_KEY, 'ok'); } catch(e) {}
-      showComposerOrGate();
-      return;
-    }
-    if (entered === String(stored)) {
-      try { sessionStorage.setItem(SESSION_KEY, 'ok'); } catch(e) {}
+      // Sign into Firebase so Security Rules can verify identity
+      firebase.auth().signInAnonymously().then(function(result) {
+        // Record uid → teamId server-side so Rules can validate posts
+        db.ref('session/' + result.user.uid).set({ teamId: TEAM_ID });
+      }).catch(function() {});
       document.getElementById('buzzPinError').style.display = 'none';
       showComposerOrGate();
     } else {
