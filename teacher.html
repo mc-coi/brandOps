@@ -867,8 +867,15 @@ function doLogin() {
 
     function launchConsole(db) {
       firebase.auth().signInAnonymously().then(function(result) {
-        db.ref('config/teacherUids/' + result.user.uid).set(true);
-      }).catch(() => {}).finally(() => {
+        // Wait for the UID to be recorded BEFORE showing the app,
+        // so Security Rules see it when the teacher's first writes arrive.
+        return db.ref('config/teacherUids/' + result.user.uid).set(true);
+      }).then(function() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appShell').style.display = 'block';
+        initApp(db);
+      }).catch(function() {
+        // If auth or UID write fails, still allow entry (auth is best-effort here)
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appShell').style.display = 'block';
         initApp(db);
