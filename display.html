@@ -385,7 +385,8 @@ db.ref('season').on('value', s => {
   startSidebarEventRotation();
 });
 db.ref('teams').on('value', s => {
-  teamsData = s.val() || {};
+  const raw = s.val() || {};
+  teamsData = Object.fromEntries(Object.entries(raw).filter(([, t]) => t?.brandName));
   rebuildSlides();
   updateSidebar();
   updateTicker();

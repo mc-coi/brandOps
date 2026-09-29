@@ -916,7 +916,15 @@ function initApp(passedDb) {
   });
 
   db.ref('teams').on('value', snap => {
-    teamsData = snap.val() || {};
+    const raw = snap.val() || {};
+    // Filter out ghost/incomplete entries (no brandName) — purge them from Firebase too
+    const ghosts = Object.keys(raw).filter(k => !raw[k]?.brandName);
+    if (ghosts.length) {
+      const purge = {};
+      ghosts.forEach(k => { purge['teams/' + k] = null; });
+      db.ref().update(purge); // silent cleanup
+    }
+    teamsData = Object.fromEntries(Object.entries(raw).filter(([, t]) => t?.brandName));
     refreshTeamUI();
     refreshTeamSelects();
     renderBuzznetGradingCard();

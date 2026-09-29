@@ -476,7 +476,8 @@ db.ref('season').on('value', snap => {
 });
 
 db.ref('teams').on('value', snap => {
-  teamsData = snap.val() || {};
+  const raw = snap.val() || {};
+  teamsData = Object.fromEntries(Object.entries(raw).filter(([, t]) => t?.brandName));
   renderAll();
 });
 
