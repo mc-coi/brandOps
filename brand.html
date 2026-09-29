@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <style>
 :root {
   --bg:#0a0a0b; --bg2:#111117; --bg3:#18181f; --bg4:#1e1e28;
@@ -662,22 +663,34 @@ if (!TEAM_ID) {
     if (inp) inp.focus();
   }
 
+  function unlockPage() {
+    try { sessionStorage.setItem(SESSION_KEY, 'ok'); } catch(e) {}
+    document.getElementById('fullPageGate').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    render();
+    renderBuzzNetTab();
+  }
+
+  // Check if current Firebase auth user is a teacher — auto-bypass gate if so
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user && !isPinVerified()) {
+      db.ref('config/teacherUids/' + user.uid).once('value', function(snap) {
+        if (snap.val() === true) unlockPage();
+      });
+    }
+  });
+
   function verifyFullPin() {
     var entered = (document.getElementById('fullPinInput').value || '').trim();
     var stored  = teamData && teamData.pin ? String(teamData.pin) : null;
     var errEl   = document.getElementById('fullPinError');
-    // Allow blank PIN only if no PIN is set; otherwise require match
     if (!stored || entered === stored) {
-      try { sessionStorage.setItem(SESSION_KEY, 'ok'); } catch(e) {}
-      // Also do the anonymous Firebase auth for server-side session
+      // Record anonymous session for server-side Security Rules
       firebase.auth().signInAnonymously().then(function(result) {
         db.ref('session/' + result.user.uid).set({ teamId: TEAM_ID });
       }).catch(function() {});
-      document.getElementById('fullPageGate').style.display = 'none';
-      document.getElementById('appContent').style.display = 'block';
       errEl.style.display = 'none';
-      render();
-      renderBuzzNetTab();
+      unlockPage();
     } else {
       errEl.style.display = 'block';
       document.getElementById('fullPinInput').value = '';
