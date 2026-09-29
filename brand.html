@@ -376,7 +376,19 @@ if (!TEAM_ID) {
     checkPhaseTransition(seasonData);
     render();
   });
-  db.ref('teams').on('value', snap => { allTeams = snap.val() || {}; teamData = allTeams[TEAM_ID] || {}; render(); });
+  db.ref('teams').on('value', snap => {
+    allTeams = snap.val() || {};
+    teamData = allTeams[TEAM_ID] || {};
+    // If the team has been deleted, show a not-found state
+    if (snap.val() && !allTeams[TEAM_ID]) {
+      document.body.innerHTML = `<div style="padding:60px;text-align:center;font-family:monospace;color:#f5a623">
+        This brand no longer exists.<br><br>
+        <a href="index.html" style="color:#f5a623">← Back to Leaderboard</a>
+      </div>`;
+      return;
+    }
+    render();
+  });
   db.ref('social/posts').on('value', snap => { socialPosts = snap.val() || {}; renderBuzzNetTab(); });
 
   // Image preview as URL is typed

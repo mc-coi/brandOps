@@ -1815,8 +1815,18 @@ function saveOverrideStats() {
 function confirmDeleteTeam(teamId, brandName) {
   openModal(
     `Delete ${brandName}?`,
-    `This will permanently remove all data for "${brandName}". This cannot be undone.`,
-    () => db.ref('teams/' + teamId).remove().then(() => showToast(`"${brandName}" deleted.`))
+    `This will permanently remove all data for "${brandName}", including their BuzzNet posts and score history. This cannot be undone.`,
+    () => {
+      const updates = {};
+      updates['teams/' + teamId] = null;
+
+      // Remove all social posts belonging to this team
+      Object.entries(postsData || {}).forEach(([key, post]) => {
+        if (post.teamId === teamId) updates['social/posts/' + key] = null;
+      });
+
+      db.ref().update(updates).then(() => showToast(`"${brandName}" deleted.`));
+    }
   );
 }
 
