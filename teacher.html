@@ -925,6 +925,12 @@ function initApp(passedDb) {
       db.ref().update(purge); // silent cleanup
     }
     teamsData = Object.fromEntries(Object.entries(raw).filter(([, t]) => t?.brandName));
+    // Back-fill PINs for existing teams that don't have one
+    const pinUpdates = {};
+    Object.entries(teamsData).forEach(([k, t]) => {
+      if (!t.pin) pinUpdates[`teams/${k}/pin`] = genPin();
+    });
+    if (Object.keys(pinUpdates).length) db.ref().update(pinUpdates);
     refreshTeamUI();
     refreshTeamSelects();
     renderBuzznetGradingCard();
@@ -1013,6 +1019,11 @@ function refreshTeamUI() {
           <div style="font-family:var(--mono);font-size:11px;color:var(--amber);margin-top:8px">
             Market Score: ${score}
           </div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+            <span style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">BuzzNet PIN:</span>
+            <span style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--amber);letter-spacing:.15em">${team.pin || '—'}</span>
+            <button onclick="regenPin('${id}')" style="font-size:10px;padding:2px 7px;border-radius:4px;background:var(--bg3);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-family:var(--mono)">↺ New PIN</button>
+          </div>
         </div>
         <div class="team-actions">
           <button class="btn small secondary" onclick="printNewspaper('${id}')">🗞️ Print</button>
@@ -1076,6 +1087,10 @@ function refreshTeamSelects() {
 }
 
 // ── Add Team ──────────────────────────────────────────────
+function genPin() {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
 function addTeam() {
   const brandName = document.getElementById('newBrandName').value.trim();
   if (!brandName) { showToast('Enter a brand name.', true); return; }
@@ -1089,7 +1104,7 @@ function addTeam() {
   const demo     = document.getElementById('newDemo').value     || dossier.targetDemo;
   const members  = document.getElementById('newTeamMembers').value.trim();
 
-  const team = { ...dossier, industry, country, targetDemo: demo, members };
+  const team = { ...dossier, industry, country, targetDemo: demo, members, pin: genPin() };
   const teamId = 'team_' + Date.now();
 
   db.ref('teams/' + teamId).set(team).then(() => {
@@ -1097,6 +1112,11 @@ function addTeam() {
     document.getElementById('newBrandName').value = '';
     document.getElementById('newTeamMembers').value = '';
   });
+}
+
+function regenPin(teamId) {
+  const pin = genPin();
+  db.ref(`teams/${teamId}/pin`).set(pin).then(() => showToast(`✓ New PIN: ${pin}`));
 }
 
 // ── Dashboard Standings ───────────────────────────────────

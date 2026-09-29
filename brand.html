@@ -296,8 +296,24 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
         </div>
       </div>
 
+      <!-- PIN gate -->
+      <div class="card" id="buzzPinGate" style="display:none">
+        <div class="card-title">🔒 Enter Team PIN to Post</div>
+        <p style="font-family:var(--mono);font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Your teacher provided a 4-digit PIN for your team. Enter it once to unlock posting for this session.</p>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input id="buzzPinInput" type="text" inputmode="numeric" maxlength="4" placeholder="PIN"
+            style="width:90px;padding:10px;background:var(--bg4);color:var(--text);border:1px solid var(--border2);border-radius:6px;font-family:var(--mono);font-size:22px;text-align:center;letter-spacing:.2em;outline:none"
+            onkeydown="if(event.key==='Enter') verifyPin()">
+          <button onclick="verifyPin()"
+            style="background:var(--amber);color:#000;border:none;padding:10px 20px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;border-radius:4px;letter-spacing:.06em;text-transform:uppercase">
+            Unlock
+          </button>
+        </div>
+        <div id="buzzPinError" style="font-family:var(--mono);font-size:11px;color:#ef4444;margin-top:8px;display:none">Incorrect PIN — check with your teacher.</div>
+      </div>
+
       <!-- Composer -->
-      <div class="card" id="buzzComposerCard">
+      <div class="card" id="buzzComposerCard" style="display:none">
         <div class="card-title">Post as <span id="buzzBrandName">your brand</span></div>
         <div id="buzzQuotaReached" style="display:none;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-family:var(--mono);font-size:12px;color:var(--green)">
           ✓ You've hit your 2-post quota for this week. New posts available next week.
@@ -606,11 +622,53 @@ if (!TEAM_ID) {
     ).join('');
   }
 
+  // ── PIN auth ──────────────────────────────────────────────
+  var SESSION_KEY = 'brandops_pin_' + TEAM_ID;
+
+  function isPinVerified() {
+    try { return sessionStorage.getItem(SESSION_KEY) === 'ok'; } catch(e) { return false; }
+  }
+
+  function showComposerOrGate() {
+    var gate     = document.getElementById('buzzPinGate');
+    var composer = document.getElementById('buzzComposerCard');
+    if (!gate || !composer) return;
+    if (isPinVerified()) {
+      gate.style.display     = 'none';
+      composer.style.display = 'block';
+    } else {
+      gate.style.display     = 'block';
+      composer.style.display = 'none';
+    }
+  }
+
+  function verifyPin() {
+    var entered = (document.getElementById('buzzPinInput').value || '').trim();
+    var stored  = teamData.pin;
+    if (!stored) {
+      // No PIN set yet — let them through (teacher hasn't set one)
+      try { sessionStorage.setItem(SESSION_KEY, 'ok'); } catch(e) {}
+      showComposerOrGate();
+      return;
+    }
+    if (entered === String(stored)) {
+      try { sessionStorage.setItem(SESSION_KEY, 'ok'); } catch(e) {}
+      document.getElementById('buzzPinError').style.display = 'none';
+      showComposerOrGate();
+    } else {
+      document.getElementById('buzzPinError').style.display = 'block';
+      document.getElementById('buzzPinInput').value = '';
+      document.getElementById('buzzPinInput').focus();
+    }
+  }
+
   // ── BuzzNet tab ───────────────────────────────────────────
   function renderBuzzNetTab() {
     if (!teamData.brandName) return;
     var week  = seasonData.currentWeek || 1;
     var QUOTA = 2;
+
+    showComposerOrGate();
 
     // Only count brand-page posts from this team this week
     var myWeekPosts = Object.values(socialPosts).filter(function(p) {
@@ -632,10 +690,12 @@ if (!TEAM_ID) {
     }).join('');
     document.getElementById('buzzQuotaDots').innerHTML = dotsHtml;
 
-    // Show/hide composer + quota-reached message
-    document.getElementById('buzzQuotaReached').style.display   = atQuota ? 'block' : 'none';
-    document.getElementById('buzzComposerFields').style.opacity = atQuota ? '0.4' : '1';
-    document.getElementById('buzzComposerFields').style.pointerEvents = atQuota ? 'none' : 'auto';
+    // Show/hide composer + quota-reached message (only when unlocked)
+    if (isPinVerified()) {
+      document.getElementById('buzzQuotaReached').style.display   = atQuota ? 'block' : 'none';
+      document.getElementById('buzzComposerFields').style.opacity = atQuota ? '0.4' : '1';
+      document.getElementById('buzzComposerFields').style.pointerEvents = atQuota ? 'none' : 'auto';
+    }
 
     // All posts from this team (all time), newest first
     var allMyPosts = Object.entries(socialPosts)
@@ -668,6 +728,11 @@ if (!TEAM_ID) {
   }
 
   function publishBrandPost() {
+    if (!isPinVerified()) {
+      showComposerOrGate();
+      return;
+    }
+
     var text  = (document.getElementById('buzzPostText').value  || '').trim();
     var image = (document.getElementById('buzzPostImage').value || '').trim();
     var week  = seasonData.currentWeek || 1;
