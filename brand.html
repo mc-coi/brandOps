@@ -656,6 +656,16 @@ if (!TEAM_ID) {
     try { return sessionStorage.getItem(SESSION_KEY) === 'ok'; } catch(e) { return false; }
   }
 
+  // SHA-256 via Web Crypto — returns a hex string promise
+  function sha256(str) {
+    var buf = new TextEncoder().encode(str);
+    return crypto.subtle.digest('SHA-256', buf).then(function(hash) {
+      return Array.from(new Uint8Array(hash)).map(function(b) {
+        return b.toString(16).padStart(2, '0');
+      }).join('');
+    });
+  }
+
   function showFullPageGate() {
     document.getElementById('fullPageGate').style.display = 'flex';
     document.getElementById('appContent').style.display = 'none';
@@ -671,6 +681,12 @@ if (!TEAM_ID) {
     renderBuzzNetTab();
   }
 
+  function recordSession() {
+    firebase.auth().signInAnonymously().then(function(result) {
+      db.ref('session/' + result.user.uid).set({ teamId: TEAM_ID });
+    }).catch(function() {});
+  }
+
   // Check if current Firebase auth user is a teacher — auto-bypass gate if so
   firebase.auth().onAuthStateChanged(function(user) {
     if (user && !isPinVerified()) {
@@ -682,20 +698,29 @@ if (!TEAM_ID) {
 
   function verifyFullPin() {
     var entered = (document.getElementById('fullPinInput').value || '').trim();
-    var stored  = teamData && teamData.pin ? String(teamData.pin) : null;
-    var errEl   = document.getElementById('fullPinError');
-    if (!stored || entered === stored) {
-      // Record anonymous session for server-side Security Rules
-      firebase.auth().signInAnonymously().then(function(result) {
-        db.ref('session/' + result.user.uid).set({ teamId: TEAM_ID });
-      }).catch(function() {});
+    var storedHash = teamData && teamData.pinHash ? teamData.pinHash : null;
+    var errEl = document.getElementById('fullPinError');
+
+    if (!storedHash) {
+      // No hash set yet — allow entry (edge case during migration)
       errEl.style.display = 'none';
+      recordSession();
       unlockPage();
-    } else {
-      errEl.style.display = 'block';
-      document.getElementById('fullPinInput').value = '';
-      document.getElementById('fullPinInput').focus();
+      return;
     }
+
+    // Hash the entered PIN and compare — PIN never travels in plain text
+    sha256(TEAM_ID + ':' + entered).then(function(enteredHash) {
+      if (enteredHash === storedHash) {
+        errEl.style.display = 'none';
+        recordSession();
+        unlockPage();
+      } else {
+        errEl.style.display = 'block';
+        document.getElementById('fullPinInput').value = '';
+        document.getElementById('fullPinInput').focus();
+      }
+    });
   }
 
   function showComposerOrGate() {
@@ -713,21 +738,27 @@ if (!TEAM_ID) {
 
   function verifyPin() {
     var entered = (document.getElementById('buzzPinInput').value || '').trim();
-    var stored  = teamData.pin;
-    if (!stored || entered === String(stored)) {
+    var storedHash = teamData.pinHash;
+    if (!storedHash) {
+      // No hash yet — allow through
       try { sessionStorage.setItem(SESSION_KEY, 'ok'); } catch(e) {}
-      // Sign into Firebase so Security Rules can verify identity
-      firebase.auth().signInAnonymously().then(function(result) {
-        // Record uid → teamId server-side so Rules can validate posts
-        db.ref('session/' + result.user.uid).set({ teamId: TEAM_ID });
-      }).catch(function() {});
+      recordSession();
       document.getElementById('buzzPinError').style.display = 'none';
       showComposerOrGate();
-    } else {
-      document.getElementById('buzzPinError').style.display = 'block';
-      document.getElementById('buzzPinInput').value = '';
-      document.getElementById('buzzPinInput').focus();
+      return;
     }
+    sha256(TEAM_ID + ':' + entered).then(function(enteredHash) {
+      if (enteredHash === storedHash) {
+        try { sessionStorage.setItem(SESSION_KEY, 'ok'); } catch(e) {}
+        recordSession();
+        document.getElementById('buzzPinError').style.display = 'none';
+        showComposerOrGate();
+      } else {
+        document.getElementById('buzzPinError').style.display = 'block';
+        document.getElementById('buzzPinInput').value = '';
+        document.getElementById('buzzPinInput').focus();
+      }
+    });
   }
 
   // ── BuzzNet tab ───────────────────────────────────────────

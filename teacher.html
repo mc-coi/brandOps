@@ -934,17 +934,42 @@ function initApp(passedDb) {
       db.ref().update(purge); // silent cleanup
     }
     teamsData = Object.fromEntries(Object.entries(raw).filter(([, t]) => t?.brandName));
-    // Back-fill PINs for existing teams that don't have one
-    const pinUpdates = {};
+    // Migrate old plain-text pins → hashed; back-fill missing pins
+    const migrationPromises = [];
     Object.entries(teamsData).forEach(([k, t]) => {
-      if (!t.pin) pinUpdates[`teams/${k}/pin`] = genPin();
+      if (t.pin && !t.pinHash) {
+        // Old plain-text pin exists — hash it, store hash, move raw to config/pins, remove from teams
+        const pin = String(t.pin);
+        migrationPromises.push(hashPin(k, pin).then(function(pinHash) {
+          const u = {};
+          u['teams/' + k + '/pinHash'] = pinHash;
+          u['teams/' + k + '/pin'] = null;
+          u['config/pins/' + k] = pin;
+          return db.ref().update(u);
+        }));
+      } else if (!t.pin && !t.pinHash) {
+        // No pin at all — generate one
+        const pin = genPin();
+        migrationPromises.push(hashPin(k, pin).then(function(pinHash) {
+          const u = {};
+          u['teams/' + k + '/pinHash'] = pinHash;
+          u['config/pins/' + k] = pin;
+          return db.ref().update(u);
+        }));
+      }
     });
-    if (Object.keys(pinUpdates).length) db.ref().update(pinUpdates);
     refreshTeamUI();
     refreshTeamSelects();
     renderBuzznetGradingCard();
     renderJournalGradingCard();
     renderBrandiesCard();
+  });
+
+  // Raw PINs live in config/pins (teacher-only readable path)
+  var pinsData = {};
+  db.ref('config/pins').on('value', function(snap) {
+    pinsData = snap.val() || {};
+    refreshTeamUI(); // re-render cards with updated PIN display
   });
 
   db.ref('social/posts').on('value', snap => {
@@ -1030,7 +1055,7 @@ function refreshTeamUI() {
           </div>
           <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
             <span style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">BuzzNet PIN:</span>
-            <span style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--amber);letter-spacing:.15em">${team.pin || '—'}</span>
+            <span style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--amber);letter-spacing:.15em">${pinsData[id] || '—'}</span>
             <button onclick="regenPin('${id}')" style="font-size:10px;padding:2px 7px;border-radius:4px;background:var(--bg3);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-family:var(--mono)">↺ New PIN</button>
           </div>
         </div>
@@ -1100,23 +1125,38 @@ function genPin() {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
+// SHA-256 via Web Crypto — returns hex string promise
+function sha256(str) {
+  const buf = new TextEncoder().encode(str);
+  return crypto.subtle.digest('SHA-256', buf).then(function(hash) {
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+  });
+}
+
+// Hash a PIN for storage: SHA-256(teamId + ':' + pin)
+function hashPin(teamId, pin) {
+  return sha256(teamId + ':' + pin);
+}
+
 function addTeam() {
   const brandName = document.getElementById('newBrandName').value.trim();
   if (!brandName) { showToast('Enter a brand name.', true); return; }
 
-  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  const dossier = GameEngine.generateBrandDossier(brandName);
-
-  // Override with manual selections
+  const dossier  = GameEngine.generateBrandDossier(brandName);
   const industry = document.getElementById('newIndustry').value || dossier.industry;
   const country  = document.getElementById('newCountry').value  || dossier.country;
   const demo     = document.getElementById('newDemo').value     || dossier.targetDemo;
   const members  = document.getElementById('newTeamMembers').value.trim();
+  const pin      = genPin();
+  const teamId   = 'team_' + Date.now();
 
-  const team = { ...dossier, industry, country, targetDemo: demo, members, pin: genPin() };
-  const teamId = 'team_' + Date.now();
-
-  db.ref('teams/' + teamId).set(team).then(() => {
+  hashPin(teamId, pin).then(function(pinHash) {
+    const team = { ...dossier, industry, country, targetDemo: demo, members, pinHash };
+    const updates = {};
+    updates['teams/' + teamId] = team;
+    updates['config/pins/' + teamId] = pin;
+    return db.ref().update(updates);
+  }).then(function() {
     showToast(`✓ Team "${brandName}" created!`);
     document.getElementById('newBrandName').value = '';
     document.getElementById('newTeamMembers').value = '';
@@ -1125,7 +1165,16 @@ function addTeam() {
 
 function regenPin(teamId) {
   const pin = genPin();
-  db.ref(`teams/${teamId}/pin`).set(pin).then(() => showToast(`✓ New PIN: ${pin}`));
+  hashPin(teamId, pin).then(function(pinHash) {
+    const updates = {};
+    updates['teams/' + teamId + '/pinHash'] = pinHash;
+    updates['config/pins/' + teamId] = pin;
+    // Remove old plain-text pin if it exists
+    updates['teams/' + teamId + '/pin'] = null;
+    return db.ref().update(updates);
+  }).then(function() {
+    showToast('✓ New PIN set. Check the team card for the new PIN.');
+  });
 }
 
 // ── Dashboard Standings ───────────────────────────────────
