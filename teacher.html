@@ -910,6 +910,7 @@ function doLogin() {
 let db;
 let seasonData = {};
 let teamsData  = {};
+let pinsData   = {}; // raw PINs from config/pins (teacher-only path)
 
 // ── Init ──────────────────────────────────────────────────
 function initApp(passedDb) {
@@ -966,7 +967,6 @@ function initApp(passedDb) {
   });
 
   // Raw PINs live in config/pins (teacher-only readable path)
-  var pinsData = {};
   db.ref('config/pins').on('value', function(snap) {
     pinsData = snap.val() || {};
     refreshTeamUI(); // re-render cards with updated PIN display
