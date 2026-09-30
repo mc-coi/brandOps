@@ -290,7 +290,8 @@ textarea { resize: vertical; min-height: 60px; }
   <div class="login-box">
     <div class="login-title">Brand<span>Ops</span></div>
     <div class="login-sub">Teacher Console · Restricted Access</div>
-    <input type="password" id="pwInput" placeholder="Enter teacher password" onkeydown="if(event.key==='Enter') doLogin()">
+    <input type="email" id="emailInput" placeholder="Teacher email" autocomplete="username" style="margin-bottom:10px" onkeydown="if(event.key==='Enter') document.getElementById('pwInput').focus()">
+    <input type="password" id="pwInput" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
     <button class="btn" id="loginBtn" onclick="doLogin()">Access Console</button>
     <div class="error-msg" id="loginError"></div>
   </div>
@@ -601,10 +602,11 @@ textarea { resize: vertical; min-height: 60px; }
         <div class="card">
           <div class="card-title">Change Teacher Password</div>
           <div style="display:flex;gap:10px;align-items:center">
-            <input type="password" id="newPwInput" placeholder="New password" style="flex:1">
+            <input type="password" id="newPwInput" placeholder="New password (6+ characters)" autocomplete="new-password" style="flex:1">
             <button class="btn small" style="width:auto" onclick="changePassword()">Update</button>
+            <button class="btn small" style="width:auto;background:var(--bg3);color:var(--text2);border:1px solid var(--border)" onclick="logout()">Log Out</button>
           </div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px">Password is stored in Firebase — never in source code.</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px">Checked by Firebase Authentication — the password is never stored in the database.</div>
         </div>
 
         <div class="card">
@@ -847,61 +849,65 @@ textarea { resize: vertical; min-height: 60px; }
 
 <script>
 // ── Auth ──────────────────────────────────────────────────
+// Teacher signs in with a Firebase Email/Password account.
+// The password is checked on Firebase's servers — it is never stored in the
+// database and never sent to students' browsers.
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+
+let _consoleLaunched = false;
+function launchConsole(user) {
+  if (_consoleLaunched) return;
+  _consoleLaunched = true;
+  const authDb = firebase.database();
+  // First teacher login claims the teacher slot (Security Rules only allow
+  // this while config/teacherUid is empty). Also remove the old plain-text password.
+  authDb.ref('config/teacherUid').once('value').then(snap => {
+    if (!snap.exists()) return authDb.ref('config/teacherUid').set(user.uid);
+    if (snap.val() !== user.uid) {
+      showToast('This account is not the registered teacher account — changes will be blocked.', true);
+    }
+  }).then(() => authDb.ref('config/teacherPassword').remove())
+    .catch(() => {})
+    .finally(() => {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appShell').style.display = 'block';
+      initApp(authDb);
+    });
+}
+
+// Stay logged in across visits: if a teacher session already exists, skip the login form
+firebase.auth().onAuthStateChanged(user => {
+  if (user && !user.isAnonymous) launchConsole(user);
+});
+
 function doLogin() {
-  const pw  = document.getElementById('pwInput').value.trim();
-  const btn = document.getElementById('loginBtn');
-  const err = document.getElementById('loginError');
-  if (!pw) { err.textContent = 'Enter a password.'; return; }
+  const email = document.getElementById('emailInput').value.trim();
+  const pw    = document.getElementById('pwInput').value;
+  const btn   = document.getElementById('loginBtn');
+  const err   = document.getElementById('loginError');
+  if (!email || !pw) { err.textContent = 'Enter your email and password.'; return; }
 
   err.textContent = '';
   btn.textContent = 'Checking…';
   btn.disabled = true;
 
-  // Check password stored in Firebase — never in source code
-  firebase.initializeApp(FIREBASE_CONFIG);
-  const authDb = firebase.database();
-  authDb.ref('config/teacherPassword').once('value', snap => {
-    btn.textContent = 'Enter';
+  firebase.auth().signInWithEmailAndPassword(email, pw).then(result => {
+    launchConsole(result.user);
+  }).catch(e => {
+    btn.textContent = 'Access Console';
     btn.disabled = false;
-    const stored = snap.val();
-
-    function launchConsole(db) {
-      firebase.auth().signInAnonymously().then(function(result) {
-        // Wait for the UID to be recorded BEFORE showing the app,
-        // so Security Rules see it when the teacher's first writes arrive.
-        return db.ref('config/teacherUids/' + result.user.uid).set(true);
-      }).then(function() {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appShell').style.display = 'block';
-        initApp(db);
-      }).catch(function() {
-        // If auth or UID write fails, still allow entry (auth is best-effort here)
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appShell').style.display = 'block';
-        initApp(db);
-      });
-    }
-
-    if (!stored) {
-      // No password set yet — first run, accept anything and save it
-      authDb.ref('config/teacherPassword').set(pw).then(() => {
-        err.style.color = 'var(--green)';
-        err.textContent = '✓ Password set. You are now logged in.';
-        setTimeout(() => launchConsole(authDb), 1200);
-      });
-    } else if (pw === stored) {
-      launchConsole(authDb);
-    } else {
-      err.style.color = '';
-      err.textContent = 'Incorrect password.';
-      document.getElementById('pwInput').value = '';
-      document.getElementById('pwInput').focus();
-    }
-  }, err => {
-    btn.textContent = 'Enter';
-    btn.disabled = false;
-    document.getElementById('loginError').textContent = 'Could not reach Firebase. Check your connection.';
+    const bad = ['auth/wrong-password', 'auth/user-not-found', 'auth/invalid-credential', 'auth/invalid-login-credentials', 'auth/invalid-email'];
+    if (bad.includes(e.code)) err.textContent = 'Incorrect email or password.';
+    else if (e.code === 'auth/too-many-requests') err.textContent = 'Too many attempts — wait a few minutes and try again.';
+    else if (e.code === 'auth/operation-not-allowed') err.textContent = 'Email/Password sign-in is not enabled in Firebase yet.';
+    else err.textContent = 'Could not sign in (' + e.code + ').';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
   });
+}
+
+function logout() {
+  firebase.auth().signOut().then(() => location.reload());
 }
 
 // ── Firebase ──────────────────────────────────────────────
@@ -2020,11 +2026,21 @@ function testPhaseOverlay() {
 }
 
 function changePassword() {
-  const newPw = document.getElementById('newPwInput').value.trim();
-  if (!newPw || newPw.length < 4) { showToast('Password must be at least 4 characters.', true); return; }
-  db.ref('config/teacherPassword').set(newPw).then(() => {
+  const newPw = document.getElementById('newPwInput').value;
+  if (!newPw || newPw.length < 6) { showToast('Password must be at least 6 characters.', true); return; }
+  const user = firebase.auth().currentUser;
+  if (!user || user.isAnonymous) { showToast('Sign in again before changing the password.', true); return; }
+  user.updatePassword(newPw).then(() => {
     showToast('✓ Password updated.');
     document.getElementById('newPwInput').value = '';
+  }).catch(e => {
+    if (e.code === 'auth/requires-recent-login') {
+      showToast('For security, log out and back in, then change the password.', true);
+    } else if (e.code === 'auth/weak-password') {
+      showToast('That password is too weak — use at least 6 characters.', true);
+    } else {
+      showToast('Could not change password (' + e.code + ').', true);
+    }
   });
 }
 

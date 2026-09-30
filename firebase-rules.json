@@ -1,0 +1,45 @@
+{
+  "rules": {
+    "teams": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === root.child('config/teacherUid').val()",
+      "$teamId": {
+        "identity": {
+          ".write": "auth != null && root.child('session/' + auth.uid + '/teamId').val() === $teamId && root.child('session/' + auth.uid + '/pin').val() === root.child('config/pins/' + $teamId).val()"
+        }
+      }
+    },
+    "season": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === root.child('config/teacherUid').val()"
+    },
+    "config": {
+      "teacherUid": {
+        ".read": true,
+        ".write": "!data.exists() && auth != null && auth.provider === 'password'"
+      },
+      "pins": {
+        ".read": "auth != null && auth.uid === root.child('config/teacherUid').val()",
+        ".write": "auth != null && auth.uid === root.child('config/teacherUid').val()"
+      },
+      "teacherPassword": {
+        ".write": "auth != null && auth.uid === root.child('config/teacherUid').val()"
+      }
+    },
+    "session": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && newData.child('teamId').isString() && newData.child('pin').isString() && newData.child('pin').val() === root.child('config/pins/' + newData.child('teamId').val()).val()"
+      }
+    },
+    "social": {
+      "posts": {
+        ".read": true,
+        ".write": "auth != null && auth.uid === root.child('config/teacherUid').val()",
+        "$postId": {
+          ".write": "auth != null && !data.exists() && newData.child('teamId').isString() && newData.child('teamId').val() === root.child('session/' + auth.uid + '/teamId').val() && root.child('session/' + auth.uid + '/pin').val() === root.child('config/pins/' + newData.child('teamId').val()).val()"
+        }
+      }
+    }
+  }
+}
