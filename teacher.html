@@ -872,7 +872,41 @@ function launchConsole(user) {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appShell').style.display = 'block';
       initApp(authDb);
+      checkTeacherAccess(user, authDb);
     });
+}
+
+// Works out whether Firebase actually recognises this account as the teacher,
+// and if not, shows a banner explaining exactly what to fix.
+function checkTeacherAccess(user, authDb) {
+  function banner(html) {
+    let b = document.getElementById('accessBanner');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'accessBanner';
+      b.style.cssText = 'background:#3b1111;border:1px solid var(--red);color:#fecaca;padding:14px 18px;margin:12px;border-radius:8px;font-family:var(--mono);font-size:12px;line-height:1.6';
+      document.getElementById('appShell').prepend(b);
+    }
+    b.innerHTML = '<strong style="color:#fff">⚠ Firebase is not letting this account make changes.</strong><br>' + html +
+      '<br><span style="color:#fca5a5">Your account ID: <code style="user-select:all">' + user.uid + '</code></span>';
+  }
+  authDb.ref('config/teacherUid').once('value').then(snap => {
+    const owner = snap.val();
+    if (!owner) {
+      banner('No teacher account is registered yet. Publish the rules from <b>firebase-rules.json</b> in Firebase Console → Realtime Database → Rules, then reload this page.');
+      return;
+    }
+    if (owner !== user.uid) {
+      banner('A different account is registered as the teacher. In Firebase Console → Realtime Database → Data, open <b>config</b>, delete <b>teacherUid</b>, then reload this page.');
+      return;
+    }
+    // Registered correctly — confirm the rules let us read the PINs
+    return authDb.ref('config/pins').once('value').catch(() => {
+      banner('Your account is registered, but the database rules are out of date. Publish the rules from <b>firebase-rules.json</b>, then reload this page.');
+    });
+  }).catch(() => {
+    banner('The database rules are out of date. Publish the rules from <b>firebase-rules.json</b> in Firebase Console → Realtime Database → Rules, then reload this page.');
+  });
 }
 
 // Stay logged in across visits: if a teacher session already exists, skip the login form
@@ -1166,6 +1200,8 @@ function addTeam() {
     showToast(`✓ Team "${brandName}" created!`);
     document.getElementById('newBrandName').value = '';
     document.getElementById('newTeamMembers').value = '';
+  }).catch(function(e) {
+    showToast('Could not create the team — Firebase blocked it (' + (e.code || e.message) + '). See the red banner at the top.', true);
   });
 }
 
@@ -1180,6 +1216,8 @@ function regenPin(teamId) {
     return db.ref().update(updates);
   }).then(function() {
     showToast('✓ New PIN set. Check the team card for the new PIN.');
+  }).catch(function(e) {
+    showToast('Could not save the PIN — Firebase blocked it (' + (e.code || e.message) + '). See the red banner at the top.', true);
   });
 }
 
