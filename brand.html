@@ -684,6 +684,10 @@ if (!TEAM_ID) {
   // The PIN is included so Security Rules can check it against config/pins
   // on Firebase's servers — a session only counts if the PIN was really correct.
   function recordSession(pin) {
+    // Never replace a teacher's sign-in with an anonymous student one —
+    // Firebase shares sign-in across tabs, so this would log the teacher console out.
+    var cur = firebase.auth().currentUser;
+    if (cur && !cur.isAnonymous) return;
     firebase.auth().signInAnonymously().then(function(result) {
       db.ref('session/' + result.user.uid).set({ teamId: TEAM_ID, pin: String(pin || '') });
     }).catch(function() {});

@@ -909,9 +909,34 @@ function checkTeacherAccess(user, authDb) {
   });
 }
 
-// Stay logged in across visits: if a teacher session already exists, skip the login form
+// Stay logged in across visits: if a teacher session already exists, skip the login form.
+// If the teacher sign-in is lost while the console is open (e.g. logged out in another tab),
+// tell the teacher right away instead of letting saves fail silently.
 firebase.auth().onAuthStateChanged(user => {
-  if (user && !user.isAnonymous) launchConsole(user);
+  if (user && !user.isAnonymous) { launchConsole(user); return; }
+  if (_consoleLaunched) {
+    showSignedOutBanner();
+  }
+});
+
+function showSignedOutBanner() {
+  if (document.getElementById('signedOutBanner')) return;
+  const b = document.createElement('div');
+  b.id = 'signedOutBanner';
+  b.style.cssText = 'position:sticky;top:0;z-index:9999;background:#3b1111;border:1px solid var(--red);color:#fecaca;padding:14px 18px;margin:12px;border-radius:8px;font-family:var(--mono);font-size:12px;line-height:1.6';
+  b.innerHTML = '<strong style="color:#fff">⚠ You\'ve been signed out of the teacher account.</strong> Changes won\'t save until you log back in. ' +
+    '<button class="btn small" style="width:auto;margin-left:10px" onclick="location.reload()">Log in again</button>';
+  document.getElementById('appShell').prepend(b);
+}
+
+// Safety net: any Firebase save that's blocked anywhere in the console shows an error
+window.addEventListener('unhandledrejection', e => {
+  const msg = String((e.reason && (e.reason.code || e.reason.message)) || '');
+  if (/permission.denied/i.test(msg)) {
+    showToast('⚠ Not saved — Firebase blocked the change. Check that you\'re signed in as the teacher.', true);
+    const u = firebase.auth().currentUser;
+    if (!u || u.isAnonymous) showSignedOutBanner();
+  }
 });
 
 function doLogin() {
@@ -1831,6 +1856,10 @@ function applyScore() {
     showToast(`${icon} Score applied to ${team.brandName}: ${effect.label}`);
     document.getElementById('scoreMediaUrl').value = '';
     loadScoreLog();
+  }).catch(e => {
+    showToast(`⚠ Score NOT saved for ${team.brandName} — Firebase blocked it (${e.code || e.message}).`, true);
+    const u = firebase.auth().currentUser;
+    if (!u || u.isAnonymous) showSignedOutBanner();
   });
 }
 
